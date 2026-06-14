@@ -39,12 +39,13 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel="Bezárás" />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.kav}
         >
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.sheet}>
             <Text style={styles.title}>Tétel szerkesztése</Text>
             <Input
               placeholder="Név"
@@ -71,9 +72,9 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
                 onPress={save}
               />
             </View>
-          </Pressable>
+          </View>
         </KeyboardAvoidingView>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

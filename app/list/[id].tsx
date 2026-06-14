@@ -113,8 +113,15 @@ export default function ListDetail() {
 
   const handleSaveEdit = async (data: { name: string; quantity: string }) => {
     if (!householdId || !editingItem) return;
-    await updateItem(householdId, id, editingItem, data);
-    setEditingItem(null);
+    try {
+      await updateItem(householdId, id, editingItem, data);
+      setEditingItem(null);
+    } catch (err) {
+      Alert.alert(
+        "Mentés sikertelen",
+        err instanceof Error ? err.message : "Ismeretlen hiba történt."
+      );
+    }
   };
 
   const confirmClear = () => {

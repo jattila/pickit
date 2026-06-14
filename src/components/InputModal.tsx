@@ -38,12 +38,13 @@ export function InputModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel="Bezárás" />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.kav}
         >
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.sheet}>
             <Text style={styles.title}>{title}</Text>
             <Input
               placeholder={placeholder}
@@ -60,9 +61,9 @@ export function InputModal({
                 onPress={() => value.trim() && onConfirm(value.trim())}
               />
             </View>
-          </Pressable>
+          </View>
         </KeyboardAvoidingView>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

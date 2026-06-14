@@ -416,11 +416,13 @@ export async function updateItem(
   };
   if (newCategory) catalogPayload.category = newCategory;
 
-  batch.set(
-    doc(catalogCol(householdId), catalogKey(newName)),
-    catalogPayload,
-    { merge: true }
-  );
+  const catalogRef = doc(catalogCol(householdId), catalogKey(newName));
+  const catalogSnap = await getDoc(catalogRef);
+  if (catalogSnap.exists()) {
+    batch.update(catalogRef, catalogPayload);
+  } else {
+    batch.set(catalogRef, { ...catalogPayload, useCount: 1 });
+  }
 
   await batch.commit();
 }
