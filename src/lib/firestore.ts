@@ -27,6 +27,7 @@ import {
   CatalogItem,
   ID,
 } from "../types";
+import { normalizeItemName } from "./itemName";
 
 /* ----------------------------- segédfüggvények ---------------------------- */
 
@@ -275,7 +276,7 @@ function catalogCol(householdId: ID) {
 
 /** Determinisztikus dokumentum-azonosító a névből, hogy ne legyen duplikátum. */
 function catalogKey(name: string): string {
-  return normalizeName(name)
+  return normalizeItemName(name)
     .toLowerCase()
     .replace(/[^a-z0-9áéíóöőúüű]+/gi, "-")
     .replace(/^-+|-+$/g, "")
@@ -287,7 +288,7 @@ function catalogUpsertFields(data: {
   category?: string;
   defaultQuantity?: string;
 }): Record<string, unknown> {
-  const name = normalizeName(data.name);
+  const name = normalizeItemName(data.name);
   const payload: Record<string, unknown> = {
     name,
     useCount: increment(1),
@@ -328,7 +329,7 @@ export async function addItem(
   uid: ID,
   input: NewItemInput
 ): Promise<void> {
-  const name = normalizeName(input.name);
+  const name = normalizeItemName(input.name);
   if (!name) return;
 
   const batch = writeBatch(db);
@@ -379,15 +380,49 @@ export async function toggleItem(
 export async function updateItem(
   householdId: ID,
   listId: ID,
-  itemId: ID,
+  item: ListItem,
   data: Partial<NewItemInput>
 ): Promise<void> {
+  const newName =
+    data.name !== undefined ? normalizeItemName(data.name) : item.name;
+  const newQuantity =
+    data.quantity !== undefined ? data.quantity.trim() : item.quantity ?? "";
+  const newCategory =
+    data.category !== undefined ? data.category.trim() : item.category ?? "";
+
   const payload: Record<string, unknown> = {};
-  if (data.name !== undefined) payload.name = normalizeName(data.name);
-  if (data.quantity !== undefined) payload.quantity = data.quantity.trim();
-  if (data.category !== undefined) payload.category = data.category.trim();
+  if (data.name !== undefined) payload.name = newName;
+  if (data.quantity !== undefined) payload.quantity = newQuantity;
+  if (data.category !== undefined) payload.category = newCategory;
   if (data.note !== undefined) payload.note = data.note.trim();
-  await updateDoc(doc(itemsCol(householdId, listId), itemId), payload);
+
+  const syncCatalog =
+    (data.name !== undefined && newName !== item.name) ||
+    (data.quantity !== undefined && newQuantity !== (item.quantity ?? "")) ||
+    (data.category !== undefined && newCategory !== (item.category ?? ""));
+
+  if (!syncCatalog) {
+    if (Object.keys(payload).length === 0) return;
+    await updateDoc(doc(itemsCol(householdId, listId), item.id), payload);
+    return;
+  }
+
+  const batch = writeBatch(db);
+  batch.update(doc(itemsCol(householdId, listId), item.id), payload);
+
+  const catalogPayload: Record<string, unknown> = {
+    name: newName,
+    defaultQuantity: newQuantity,
+  };
+  if (newCategory) catalogPayload.category = newCategory;
+
+  batch.set(
+    doc(catalogCol(householdId), catalogKey(newName)),
+    catalogPayload,
+    { merge: true }
+  );
+
+  await batch.commit();
 }
 
 export async function deleteItem(
@@ -452,7 +487,7 @@ export async function upsertCatalogItem(
   householdId: ID,
   data: { name: string; category?: string; defaultQuantity?: string }
 ): Promise<void> {
-  const name = normalizeName(data.name);
+  const name = normalizeItemName(data.name);
   if (!name) return;
   await setDoc(
     doc(catalogCol(householdId), catalogKey(name)),
@@ -466,6 +501,36 @@ export async function deleteCatalogItem(
   catalogId: ID
 ): Promise<void> {
   await deleteDoc(doc(catalogCol(householdId), catalogId));
+}
+
+export async function updateCatalogItem(
+  householdId: ID,
+  item: CatalogItem,
+  data: { name: string; defaultQuantity?: string; category?: string }
+): Promise<void> {
+  const name = normalizeItemName(data.name);
+  if (!name) return;
+
+  const newKey = catalogKey(name);
+  const payload = {
+    name,
+    defaultQuantity: (data.defaultQuantity ?? item.defaultQuantity ?? "").trim(),
+    category: (data.category ?? item.category ?? "").trim(),
+  };
+
+  if (newKey === item.id) {
+    await updateDoc(doc(catalogCol(householdId), item.id), payload);
+    return;
+  }
+
+  const batch = writeBatch(db);
+  batch.delete(doc(catalogCol(householdId), item.id));
+  batch.set(doc(catalogCol(householdId), newKey), {
+    ...payload,
+    useCount: item.useCount,
+    lastUsedAt: item.lastUsedAt ?? serverTimestamp(),
+  });
+  await batch.commit();
 }
 
 /** Több katalógustételt egyszerre hozzáad egy listához. */

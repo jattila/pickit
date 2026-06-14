@@ -13,9 +13,12 @@ import { useAuth } from "../../src/context/AuthContext";
 import {
   subscribeCatalog,
   deleteCatalogItem,
+  updateCatalogItem,
 } from "../../src/lib/firestore";
 import { CatalogItem } from "../../src/types";
 import { EmptyState } from "../../src/components/ui";
+import { EditIconButton } from "../../src/components/EditIconButton";
+import { CatalogEditModal } from "../../src/components/CatalogEditModal";
 import { colors, spacing, radius } from "../../src/theme";
 
 export default function CatalogScreen() {
@@ -23,6 +26,7 @@ export default function CatalogScreen() {
   const householdId = profile?.householdId ?? null;
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [search, setSearch] = useState("");
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
 
   useEffect(() => {
     if (!householdId) return;
@@ -44,6 +48,12 @@ export default function CatalogScreen() {
         onPress: () => householdId && deleteCatalogItem(householdId, item.id),
       },
     ]);
+  };
+
+  const saveEdit = async (data: { name: string; defaultQuantity: string }) => {
+    if (!householdId || !editingItem) return;
+    await updateCatalogItem(householdId, editingItem, data);
+    setEditingItem(null);
   };
 
   return (
@@ -81,14 +91,26 @@ export default function CatalogScreen() {
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.name}</Text>
-              {item.category ? <Text style={styles.cat}>{item.category}</Text> : null}
+              {item.defaultQuantity ? (
+                <Text style={styles.cat}>{item.defaultQuantity}</Text>
+              ) : item.category ? (
+                <Text style={styles.cat}>{item.category}</Text>
+              ) : null}
             </View>
             <Text style={styles.use}>{item.useCount}×</Text>
+            <EditIconButton onPress={() => setEditingItem(item)} />
             <Pressable onPress={() => remove(item)} hitSlop={10} style={styles.del}>
               <Text style={styles.delText}>✕</Text>
             </Pressable>
           </View>
         )}
+      />
+
+      <CatalogEditModal
+        visible={editingItem !== null}
+        item={editingItem}
+        onCancel={() => setEditingItem(null)}
+        onSave={saveEdit}
       />
     </SafeAreaView>
   );

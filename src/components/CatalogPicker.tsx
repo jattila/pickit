@@ -13,9 +13,13 @@ import {
   subscribeCatalog,
   addItemsFromCatalog,
   addItem,
+  updateCatalogItem,
 } from "../lib/firestore";
 import { CatalogItem } from "../types";
 import { Button, EmptyState } from "./ui";
+import { EditIconButton } from "./EditIconButton";
+import { CatalogEditModal } from "./CatalogEditModal";
+import { formatItemNameInput } from "../lib/itemName";
 import { colors, spacing, radius } from "../theme";
 
 interface Props {
@@ -38,6 +42,7 @@ export function CatalogPicker({
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
 
   useEffect(() => {
     if (!visible || !householdId) return;
@@ -78,6 +83,12 @@ export function CatalogPicker({
     await addItem(householdId, listId, uid, { name });
   };
 
+  const saveEdit = async (data: { name: string; defaultQuantity: string }) => {
+    if (!householdId || !editingItem) return;
+    await updateCatalogItem(householdId, editingItem, data);
+    setEditingItem(null);
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
       <SafeAreaView style={styles.safe}>
@@ -93,8 +104,9 @@ export function CatalogPicker({
           placeholder="Keresés vagy új tétel…"
           placeholderTextColor={colors.textMuted}
           value={search}
-          onChangeText={setSearch}
+          onChangeText={(text) => setSearch(formatItemNameInput(text))}
           autoCorrect={false}
+          autoCapitalize="none"
         />
 
         <FlatList
@@ -119,18 +131,18 @@ export function CatalogPicker({
           renderItem={({ item }) => {
             const isSel = !!selected[item.id];
             return (
-              <Pressable
-                style={[styles.row, isSel && styles.rowSelected]}
-                onPress={() => toggle(item.id)}
-              >
-                <View style={[styles.checkbox, isSel && styles.checkboxOn]}>
-                  {isSel && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.rowName}>{item.name}</Text>
-                {item.useCount > 1 ? (
-                  <Text style={styles.useCount}>{item.useCount}×</Text>
-                ) : null}
-              </Pressable>
+              <View style={[styles.row, isSel && styles.rowSelected]}>
+                <Pressable style={styles.rowMain} onPress={() => toggle(item.id)}>
+                  <View style={[styles.checkbox, isSel && styles.checkboxOn]}>
+                    {isSel && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text style={styles.rowName}>{item.name}</Text>
+                  {item.useCount > 1 ? (
+                    <Text style={styles.useCount}>{item.useCount}×</Text>
+                  ) : null}
+                </Pressable>
+                <EditIconButton onPress={() => setEditingItem(item)} />
+              </View>
             );
           }}
         />
@@ -150,6 +162,13 @@ export function CatalogPicker({
           />
         </View>
       </SafeAreaView>
+
+      <CatalogEditModal
+        visible={editingItem !== null}
+        item={editingItem}
+        onCancel={() => setEditingItem(null)}
+        onSave={saveEdit}
+      />
     </Modal>
   );
 }
@@ -179,12 +198,20 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
+    gap: spacing.sm,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    padding: spacing.md,
+    paddingRight: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  rowMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingRight: 0,
   },
   rowSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   checkbox: {

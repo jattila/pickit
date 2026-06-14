@@ -31,6 +31,8 @@ import { EmptyState, ProgressBar } from "../../src/components/ui";
 import { CatalogPicker } from "../../src/components/CatalogPicker";
 import { CatalogSuggestions } from "../../src/components/CatalogSuggestions";
 import { ItemEditModal } from "../../src/components/ItemEditModal";
+import { EditIconButton } from "../../src/components/EditIconButton";
+import { formatItemNameInput } from "../../src/lib/itemName";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 
 export default function ListDetail() {
@@ -111,7 +113,7 @@ export default function ListDetail() {
 
   const handleSaveEdit = async (data: { name: string; quantity: string }) => {
     if (!householdId || !editingItem) return;
-    await updateItem(householdId, id, editingItem.id, data);
+    await updateItem(householdId, id, editingItem, data);
     setEditingItem(null);
   };
 
@@ -257,10 +259,12 @@ export default function ListDetail() {
             placeholder="Új tétel…"
             placeholderTextColor={colors.textMuted}
             value={draft}
-            onChangeText={setDraft}
+            onChangeText={(text) => setDraft(formatItemNameInput(text))}
             onSubmitEditing={() => handleAdd()}
             returnKeyType="done"
             blurOnSubmit={false}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
           <TextInput
             style={styles.qtyInput}
@@ -311,30 +315,33 @@ function ItemRow({
   onDelete: () => void;
 }) {
   return (
-    <Pressable
-      style={styles.item}
-      onPress={onToggle}
-      onLongPress={() =>
-        Alert.alert(item.name, undefined, [
-          { text: "Szerkesztés", onPress: onEdit },
-          { text: "Törlés", style: "destructive", onPress: onDelete },
-          { text: "Mégse", style: "cancel" },
-        ])
-      }
-    >
-      <View style={[styles.checkbox, item.checked && styles.checkboxOn]}>
-        {item.checked && <Text style={styles.checkmark}>✓</Text>}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
-          {item.name}
-          {item.quantity ? <Text style={styles.itemQty}>  {item.quantity}</Text> : null}
-        </Text>
-        {item.checked && item.checkedByName ? (
-          <Text style={styles.checkedBy}>{item.checkedByName} bejelölte</Text>
-        ) : null}
-      </View>
-    </Pressable>
+    <View style={styles.item}>
+      <Pressable
+        style={styles.itemMain}
+        onPress={onToggle}
+        onLongPress={() =>
+          Alert.alert(item.name, undefined, [
+            { text: "Szerkesztés", onPress: onEdit },
+            { text: "Törlés", style: "destructive", onPress: onDelete },
+            { text: "Mégse", style: "cancel" },
+          ])
+        }
+      >
+        <View style={[styles.checkbox, item.checked && styles.checkboxOn]}>
+          {item.checked && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
+            {item.name}
+            {item.quantity ? <Text style={styles.itemQty}>  {item.quantity}</Text> : null}
+          </Text>
+          {item.checked && item.checkedByName ? (
+            <Text style={styles.checkedBy}>{item.checkedByName} bejelölte</Text>
+          ) : null}
+        </View>
+      </Pressable>
+      <EditIconButton onPress={onEdit} />
+    </View>
   );
 }
 
@@ -362,9 +369,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    padding: spacing.md,
-    gap: spacing.md,
+    paddingRight: spacing.sm,
+    gap: spacing.xs,
     ...shadow.card,
+  },
+  itemMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: spacing.md,
+    paddingRight: 0,
+    gap: spacing.md,
   },
   checkbox: {
     width: 26,

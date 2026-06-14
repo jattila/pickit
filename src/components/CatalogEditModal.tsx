@@ -9,32 +9,32 @@ import {
   Pressable,
 } from "react-native";
 import { Button, Input } from "./ui";
-import { ListItem } from "../types";
+import { CatalogItem } from "../types";
 import { formatItemNameInput } from "../lib/itemName";
 import { colors, spacing, radius } from "../theme";
 
 interface Props {
   visible: boolean;
-  item: ListItem | null;
+  item: CatalogItem | null;
   onCancel: () => void;
-  onSave: (data: { name: string; quantity: string }) => void;
+  onSave: (data: { name: string; defaultQuantity: string }) => void;
 }
 
-export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
+export function CatalogEditModal({ visible, item, onCancel, onSave }: Props) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
 
   useEffect(() => {
     if (visible && item) {
       setName(item.name);
-      setQuantity(item.quantity ?? "");
+      setQuantity(item.defaultQuantity ?? "");
     }
   }, [visible, item]);
 
   const save = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    onSave({ name: trimmed, quantity: quantity.trim() });
+    onSave({ name: trimmed, defaultQuantity: quantity.trim() });
   };
 
   return (
@@ -45,7 +45,7 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
           style={styles.kav}
         >
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.title}>Tétel szerkesztése</Text>
+            <Text style={styles.title}>Katalógus tétel szerkesztése</Text>
             <Input
               placeholder="Név"
               value={name}
@@ -56,7 +56,7 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
               autoCorrect={false}
             />
             <Input
-              placeholder="Mennyiség (pl. 2 db, 1 kg)"
+              placeholder="Alapértelmezett mennyiség (pl. 2 db)"
               value={quantity}
               onChangeText={setQuantity}
               returnKeyType="done"
