@@ -17,16 +17,20 @@ import { useOfflineBannerInset } from "../../src/context/NetworkContext";
 import { useKeyboardHeight } from "../../src/hooks/useKeyboardHeight";
 import {
   subscribeItems,
+  subscribeCatalog,
   addItem,
   toggleItem,
+  updateItem,
   deleteItem,
   clearCheckedItems,
   deleteList,
   setListArchived,
 } from "../../src/lib/firestore";
-import { ListItem } from "../../src/types";
+import { CatalogItem, ListItem } from "../../src/types";
 import { EmptyState, ProgressBar } from "../../src/components/ui";
 import { CatalogPicker } from "../../src/components/CatalogPicker";
+import { CatalogSuggestions } from "../../src/components/CatalogSuggestions";
+import { ItemEditModal } from "../../src/components/ItemEditModal";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 
 export default function ListDetail() {
@@ -36,9 +40,11 @@ export default function ListDetail() {
   const householdId = profile?.householdId ?? null;
 
   const [items, setItems] = useState<ListItem[] | null>(null);
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [draft, setDraft] = useState("");
   const [qty, setQty] = useState("");
   const [showCatalog, setShowCatalog] = useState(false);
+  const [editingItem, setEditingItem] = useState<ListItem | null>(null);
   const insets = useSafeAreaInsets();
   const bannerInset = useOfflineBannerInset();
   const keyboardHeight = useKeyboardHeight();
@@ -56,6 +62,17 @@ export default function ListDetail() {
     return unsub;
   }, [householdId, id]);
 
+  useEffect(() => {
+    if (!householdId) return;
+    const unsub = subscribeCatalog(householdId, setCatalog);
+    return unsub;
+  }, [householdId]);
+
+  const existingNames = useMemo(
+    () => (items ?? []).map((i) => i.name.toLowerCase()),
+    [items]
+  );
+
   const { unchecked, checked } = useMemo(() => {
     const list = items ?? [];
     return {
@@ -68,13 +85,18 @@ export default function ListDetail() {
   const done = checked.length;
   const progress = total > 0 ? done / total : 0;
 
-  const handleAdd = async () => {
-    if (!householdId || !user || !draft.trim()) return;
-    const name = draft.trim();
-    const quantity = qty.trim();
+  const handleAdd = async (nameOverride?: string, quantityOverride?: string) => {
+    if (!householdId || !user) return;
+    const name = (nameOverride ?? draft).trim();
+    const quantity = (quantityOverride ?? qty).trim();
+    if (!name) return;
     setDraft("");
     setQty("");
     await addItem(householdId, id, user.uid, { name, quantity });
+  };
+
+  const handlePickSuggestion = (item: CatalogItem) => {
+    void handleAdd(item.name, item.defaultQuantity ?? "");
   };
 
   const handleToggle = (item: ListItem) => {
@@ -85,6 +107,12 @@ export default function ListDetail() {
   const handleDelete = (item: ListItem) => {
     if (!householdId) return;
     void deleteItem(householdId, id, item);
+  };
+
+  const handleSaveEdit = async (data: { name: string; quantity: string }) => {
+    if (!householdId || !editingItem) return;
+    await updateItem(householdId, id, editingItem.id, data);
+    setEditingItem(null);
   };
 
   const confirmClear = () => {
@@ -173,7 +201,12 @@ export default function ListDetail() {
               ) : null
             }
             renderItem={({ item }) => (
-              <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
+              <ItemRow
+                item={item}
+                onToggle={() => handleToggle(item)}
+                onEdit={() => setEditingItem(item)}
+                onDelete={() => handleDelete(item)}
+              />
             )}
             ListFooterComponent={
               checked.length > 0 ? (
@@ -189,6 +222,7 @@ export default function ListDetail() {
                       key={item.id}
                       item={item}
                       onToggle={() => handleToggle(item)}
+                      onEdit={() => setEditingItem(item)}
                       onDelete={() => handleDelete(item)}
                     />
                   ))}
@@ -208,6 +242,12 @@ export default function ListDetail() {
           },
         ]}
       >
+        <CatalogSuggestions
+          query={draft}
+          catalog={catalog}
+          existingNames={existingNames}
+          onSelect={handlePickSuggestion}
+        />
         <View style={styles.addBar}>
           <Pressable style={styles.catalogBtn} onPress={() => setShowCatalog(true)}>
             <Text style={styles.catalogBtnText}>🗂️</Text>
@@ -218,7 +258,7 @@ export default function ListDetail() {
             placeholderTextColor={colors.textMuted}
             value={draft}
             onChangeText={setDraft}
-            onSubmitEditing={handleAdd}
+            onSubmitEditing={() => handleAdd()}
             returnKeyType="done"
             blurOnSubmit={false}
           />
@@ -228,11 +268,11 @@ export default function ListDetail() {
             placeholderTextColor={colors.textMuted}
             value={qty}
             onChangeText={setQty}
-            onSubmitEditing={handleAdd}
+            onSubmitEditing={() => handleAdd()}
           />
           <Pressable
             style={[styles.addBtn, !draft.trim() && styles.addBtnDisabled]}
-            onPress={handleAdd}
+            onPress={() => handleAdd()}
             disabled={!draft.trim()}
           >
             <Text style={styles.addBtnText}>＋</Text>
@@ -245,8 +285,15 @@ export default function ListDetail() {
         householdId={householdId}
         listId={id}
         uid={user?.uid ?? ""}
-        existingNames={(items ?? []).map((i) => i.name.toLowerCase())}
+        existingNames={existingNames}
         onClose={() => setShowCatalog(false)}
+      />
+
+      <ItemEditModal
+        visible={editingItem !== null}
+        item={editingItem}
+        onCancel={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
       />
     </View>
   );
@@ -255,10 +302,12 @@ export default function ListDetail() {
 function ItemRow({
   item,
   onToggle,
+  onEdit,
   onDelete,
 }: {
   item: ListItem;
   onToggle: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -267,6 +316,7 @@ function ItemRow({
       onPress={onToggle}
       onLongPress={() =>
         Alert.alert(item.name, undefined, [
+          { text: "Szerkesztés", onPress: onEdit },
           { text: "Törlés", style: "destructive", onPress: onDelete },
           { text: "Mégse", style: "cancel" },
         ])

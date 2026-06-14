@@ -269,6 +269,37 @@ function itemsCol(householdId: ID, listId: ID) {
   return collection(db, "households", householdId, "lists", listId, "items");
 }
 
+function catalogCol(householdId: ID) {
+  return collection(db, "households", householdId, "catalog");
+}
+
+/** Determinisztikus dokumentum-azonosító a névből, hogy ne legyen duplikátum. */
+function catalogKey(name: string): string {
+  return normalizeName(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9áéíóöőúüű]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "item";
+}
+
+function catalogUpsertFields(data: {
+  name: string;
+  category?: string;
+  defaultQuantity?: string;
+}): Record<string, unknown> {
+  const name = normalizeName(data.name);
+  const payload: Record<string, unknown> = {
+    name,
+    useCount: increment(1),
+    lastUsedAt: serverTimestamp(),
+  };
+  const category = data.category?.trim();
+  const quantity = data.defaultQuantity?.trim();
+  if (category) payload.category = category;
+  if (quantity) payload.defaultQuantity = quantity;
+  return payload;
+}
+
 export function subscribeItems(
   householdId: ID,
   listId: ID,
@@ -316,10 +347,12 @@ export async function addItem(
     order: Date.now(),
   });
   batch.update(doc(listsCol(householdId), listId), { itemCount: increment(1) });
+  batch.set(
+    doc(catalogCol(householdId), catalogKey(name)),
+    catalogUpsertFields({ name, category: input.category, defaultQuantity: input.quantity }),
+    { merge: true }
+  );
   await batch.commit();
-
-  // Katalógus frissítése (újraválogatáshoz). Ne blokkolja a hozzáadást.
-  void upsertCatalogItem(householdId, { name, category: input.category, defaultQuantity: input.quantity });
 }
 
 export async function toggleItem(
@@ -390,31 +423,29 @@ export async function clearCheckedItems(
 
 /* -------------------------------- katalógus ------------------------------ */
 
-function catalogCol(householdId: ID) {
-  return collection(db, "households", householdId, "catalog");
-}
-
 export function subscribeCatalog(
   householdId: ID,
   cb: (items: CatalogItem[]) => void
 ): Unsubscribe {
-  const q = query(catalogCol(householdId), orderBy("useCount", "desc"));
-  return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<CatalogItem, "id">),
-    }));
-    cb(items);
-  });
-}
-
-/** Determinisztikus dokumentum-azonosító a névből, hogy ne legyen duplikátum. */
-function catalogKey(name: string): string {
-  return normalizeName(name)
-    .toLowerCase()
-    .replace(/[^a-z0-9áéíóöőúüű]+/gi, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "item";
+  const q = query(catalogCol(householdId));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const items = snap.docs
+        .map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<CatalogItem, "id">),
+        }))
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, "hu", { sensitivity: "base" })
+        );
+      cb(items);
+    },
+    (err) => {
+      console.warn("[PickIt] Katalógus betöltése sikertelen:", err.message);
+      cb([]);
+    }
+  );
 }
 
 export async function upsertCatalogItem(
@@ -423,24 +454,11 @@ export async function upsertCatalogItem(
 ): Promise<void> {
   const name = normalizeName(data.name);
   if (!name) return;
-  const ref = doc(catalogCol(householdId), catalogKey(name));
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    await updateDoc(ref, {
-      useCount: increment(1),
-      lastUsedAt: serverTimestamp(),
-      ...(data.category ? { category: data.category.trim() } : {}),
-      ...(data.defaultQuantity ? { defaultQuantity: data.defaultQuantity.trim() } : {}),
-    });
-  } else {
-    await setDoc(ref, {
-      name,
-      category: data.category?.trim() || "",
-      defaultQuantity: data.defaultQuantity?.trim() || "",
-      useCount: 1,
-      lastUsedAt: serverTimestamp(),
-    });
-  }
+  await setDoc(
+    doc(catalogCol(householdId), catalogKey(name)),
+    catalogUpsertFields(data),
+    { merge: true }
+  );
 }
 
 export async function deleteCatalogItem(
