@@ -1,0 +1,126 @@
+rules_version = '2';
+
+// PickIt biztonsági szabályok (production).
+// Másold be ezeket a Firebase Console > Firestore Database > Rules fülre,
+// majd kattints a Publish gombra.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Igaz, ha a bejelentkezett user tagja az adott háztartásnak.
+    function isMemberOf(householdId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/households/$(householdId))
+        && request.auth.uid in
+           get(/databases/$(database)/documents/households/$(householdId)).data.memberIds;
+    }
+
+    // Sztring típus + hosszellenőrzés.
+    function strLen(v, minLen, maxLen) {
+      return v is string && v.size() >= minLen && v.size() <= maxLen;
+    }
+
+    // Felhasználói profil: mindenki csak a sajátját éri el.
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && strLen(request.resource.data.displayName, 1, 100);
+      allow delete: if false;
+    }
+
+    // Meghívó kód → háztartás párosítás.
+    // Bárki bejelentkezett user olvashatja (ez kell a csatlakozáshoz), de a
+    // dokumentum csak a háztartás azonosítóját tartalmazza, semmi érzékenyet.
+    // Létrehozni/módosítani csak a háztartás tagja tudja.
+    match /inviteCodes/{code} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && isMemberOf(request.resource.data.householdId);
+      allow update, delete: if signedIn()
+        && isMemberOf(resource.data.householdId);
+    }
+
+    // Háztartás: kizárólag a tagjai olvashatják/írhatják.
+    match /households/{householdId} {
+      allow read: if isMemberOf(householdId);
+
+      // Létrehozáskor a létrehozó az egyetlen tag, és ő a createdBy.
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds.hasOnly([request.auth.uid])
+        && request.resource.data.memberIds.hasAll([request.auth.uid]);
+
+      allow update: if
+        // a) meglévő tag módosít (átnevezés, kilépés) – de a kulcsmezők nem változhatnak
+        (isMemberOf(householdId)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.inviteCode == resource.data.inviteCode)
+        ||
+        // b) új tag csatlakozik – kizárólag saját magát adhatja hozzá
+        (signedIn()
+          && !(request.auth.uid in resource.data.memberIds)
+          && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+          && request.resource.data.memberIds.hasAll([request.auth.uid])
+          && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.inviteCode == resource.data.inviteCode);
+
+      allow delete: if isMemberOf(householdId);
+
+      // ---- Listák ----
+      match /lists/{listId} {
+        allow read: if isMemberOf(householdId);
+        allow create, update: if isMemberOf(householdId)
+          && strLen(request.resource.data.name, 1, 100)
+          && request.resource.data.archived is bool
+          && request.resource.data.itemCount is number
+          && request.resource.data.checkedCount is number;
+        allow delete: if isMemberOf(householdId);
+
+        // ---- Tételek ----
+        match /items/{itemId} {
+          allow read: if isMemberOf(householdId);
+
+          allow create: if isMemberOf(householdId)
+            && strLen(request.resource.data.name, 1, 100)
+            && strLen(request.resource.data.quantity, 0, 50)
+            && strLen(request.resource.data.category, 0, 50)
+            && strLen(request.resource.data.note, 0, 500)
+            && request.resource.data.order is number
+            // Új tétel mindig bejelöletlen, "senki" által.
+            && request.resource.data.checked == false
+            && request.resource.data.checkedBy == null;
+
+          allow update: if isMemberOf(householdId)
+            && strLen(request.resource.data.name, 1, 100)
+            && strLen(request.resource.data.quantity, 0, 50)
+            && strLen(request.resource.data.category, 0, 50)
+            && strLen(request.resource.data.note, 0, 500)
+            && request.resource.data.order is number
+            && request.resource.data.checked is bool
+            // Bejelölni csak SAJÁT néven lehet: a checkedBy vagy változatlan,
+            // vagy null (visszavonás), vagy a saját uid.
+            && (request.resource.data.checkedBy == resource.data.checkedBy
+                || request.resource.data.checkedBy == null
+                || request.resource.data.checkedBy == request.auth.uid);
+
+          allow delete: if isMemberOf(householdId);
+        }
+      }
+
+      // ---- Katalógus (korábbi tételek) ----
+      match /catalog/{catalogId} {
+        allow read: if isMemberOf(householdId);
+        allow create, update: if isMemberOf(householdId)
+          && strLen(request.resource.data.name, 1, 100)
+          && request.resource.data.useCount is number;
+        allow delete: if isMemberOf(householdId);
+      }
+    }
+  }
+}
