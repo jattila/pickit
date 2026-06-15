@@ -20,6 +20,7 @@ import { VerifyEmailBanner } from "../../src/components/VerifyEmailBanner";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { useTranslation } from "../../src/context/LocaleContext";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function ListsScreen() {
   const { user, profile, household } = useAuth();
@@ -52,12 +53,10 @@ export default function ListsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.eyebrow}>{household?.name ?? t("common.household")}</Text>
-          <Text style={styles.h1}>{t("lists.title")}</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        eyebrow={household?.name ?? t("common.household")}
+        title={t("lists.title")}
+      />
 
       <VerifyEmailBanner />
 
@@ -138,13 +137,6 @@ function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void })
 function useStyles() {
   return useScaledStyleSheet((fs) => ({
     safe: { flex: 1, backgroundColor: colors.bg },
-    header: {
-      paddingHorizontal: spacing.xl,
-      paddingTop: spacing.md,
-      paddingBottom: spacing.sm,
-    },
-    eyebrow: { fontSize: fs(13), fontWeight: "700", color: colors.primary, textTransform: "uppercase" },
-    h1: { fontSize: fs(28), fontWeight: "800", color: colors.text },
     center: { flex: 1, alignItems: "center", justifyContent: "center" },
     listContent: { padding: spacing.lg, gap: spacing.md, paddingBottom: 120 },
     row: { gap: spacing.sm },

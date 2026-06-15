@@ -21,6 +21,7 @@ import { CatalogEditModal } from "../../src/components/CatalogEditModal";
 import { colors, spacing, radius } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { useTranslation } from "../../src/context/LocaleContext";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function CatalogScreen() {
   const { profile } = useAuth();
@@ -61,10 +62,8 @@ export default function CatalogScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <View style={styles.header}>
-        <Text style={styles.h1}>{t("catalog.title")}</Text>
-        <Text style={styles.sub}>{t("catalog.subtitle")}</Text>
-      </View>
+      <ScreenHeader title={t("catalog.title")} />
+      <Text style={styles.sub}>{t("catalog.subtitle")}</Text>
 
       <TextInput
         style={styles.search}
@@ -117,9 +116,14 @@ export default function CatalogScreen() {
 function useStyles() {
   return useScaledStyleSheet((fs) => ({
     safe: { flex: 1, backgroundColor: colors.bg },
-    header: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-    h1: { fontSize: fs(28), fontWeight: "800", color: colors.text },
-    sub: { fontSize: fs(14), color: colors.textMuted, marginTop: 4, lineHeight: fs(20) },
+    sub: {
+      fontSize: fs(14),
+      color: colors.textMuted,
+      marginTop: 0,
+      marginBottom: spacing.sm,
+      lineHeight: fs(20),
+      paddingHorizontal: spacing.lg,
+    },
     search: {
       marginHorizontal: spacing.lg,
       marginTop: spacing.md,

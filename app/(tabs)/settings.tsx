@@ -17,6 +17,7 @@ import { LinkAccountModal } from "../../src/components/LinkAccountModal";
 import { humanizeAuthError } from "../../src/lib/authErrors";
 import { useFontScale } from "../../src/context/FontScaleContext";
 import { useTranslation } from "../../src/context/LocaleContext";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { AppLocale } from "../../src/i18n/types";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { colors, spacing, radius } from "../../src/theme";
@@ -119,9 +120,8 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
+      <ScreenHeader title={t("settings.title")} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.h1}>{t("settings.title")}</Text>
-
         <Card style={{ gap: spacing.sm }}>
           <Text style={styles.label}>{t("settings.signedInAs")}</Text>
           <Text style={styles.value}>{displayName}</Text>
@@ -276,8 +276,7 @@ export default function SettingsScreen() {
 function useStyles() {
   return useScaledStyleSheet((fs) => ({
     safe: { flex: 1, backgroundColor: colors.bg },
-    content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 140 },
-    h1: { fontSize: fs(28), fontWeight: "800", color: colors.text, marginBottom: spacing.xs },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 140, paddingTop: spacing.xs },
     label: {
       fontSize: fs(13),
       fontWeight: "700",

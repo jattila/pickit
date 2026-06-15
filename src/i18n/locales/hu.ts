@@ -218,6 +218,11 @@ export const hu = {
     title: "Offline mód",
     sub: "A listák a telefonon maradnak. Szinkronizálás, amint van internet.",
   },
+  menu: {
+    open: "Menü megnyitása",
+    close: "Menü bezárása",
+    navigation: "Navigáció",
+  },
 };
 
 export type TranslationTree = typeof hu;

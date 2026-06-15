@@ -213,4 +213,9 @@ export const en: TranslationTree = {
     title: "Offline mode",
     sub: "Lists stay on your phone. They sync when you're back online.",
   },
+  menu: {
+    open: "Open menu",
+    close: "Close menu",
+    navigation: "Navigation",
+  },
 };

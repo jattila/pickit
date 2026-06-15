@@ -9,6 +9,8 @@ import { FontScaleProvider } from "../src/context/FontScaleContext";
 import { LocaleProvider } from "../src/context/LocaleContext";
 import { NetworkProvider } from "../src/context/NetworkContext";
 import { NotConfigured } from "../src/components/NotConfigured";
+import { MenuProvider } from "../src/context/MenuContext";
+import { SideMenu } from "../src/components/SideMenu";
 import { OfflineBanner } from "../src/components/OfflineBanner";
 import { Sentry } from "../src/config/sentry";
 import { colors } from "../src/theme";
@@ -52,8 +54,11 @@ function RootLayout() {
           <AuthProvider>
             <LocaleProvider>
               <FontScaleProvider>
-                <StatusBar style="dark" />
-                <RootNavigator />
+                <MenuProvider>
+                  <StatusBar style="dark" />
+                  <RootNavigator />
+                  <SideMenu />
+                </MenuProvider>
               </FontScaleProvider>
             </LocaleProvider>
           </AuthProvider>

@@ -34,6 +34,7 @@ import { CatalogPicker } from "../../src/components/CatalogPicker";
 import { CatalogSuggestions } from "../../src/components/CatalogSuggestions";
 import { ItemEditModal } from "../../src/components/ItemEditModal";
 import { EditIconButton } from "../../src/components/EditIconButton";
+import { HamburgerButton } from "../../src/components/HamburgerButton";
 import { formatItemNameInput, itemNameKey, normalizeItemName } from "../../src/lib/itemName";
 import { isAlreadyCheckedOnList } from "../../src/lib/listItems";
 import { colors, spacing, radius, shadow } from "../../src/theme";
@@ -205,6 +206,7 @@ export default function ListDetail() {
     <View style={[styles.safe, { paddingTop: topPadding }]}>
       <View style={styles.flex}>
         <View style={styles.header}>
+          <HamburgerButton />
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
