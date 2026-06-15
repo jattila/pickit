@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
+import { useTranslation } from "../src/context/LocaleContext";
 import { Button, Input, Title, Subtitle, Card } from "../src/components/ui";
 import { createHousehold, joinHousehold } from "../src/lib/firestore";
 import { colors, spacing, radius } from "../src/theme";
@@ -20,6 +21,7 @@ type Mode = "create" | "join";
 export default function Setup() {
   const { user, displayName, requiresVerification, signOut } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("create");
   const [householdName, setHouseholdName] = useState("");
   const [code, setCode] = useState("");
@@ -33,19 +35,16 @@ export default function Setup() {
     setLoading(true);
     try {
       if (mode === "create") {
-        if (!householdName.trim()) throw new Error("Adj nevet a családnak.");
+        if (!householdName.trim()) throw new Error(t("setup.errHouseholdName"));
         await createHousehold(user.uid, displayName, householdName.trim());
       } else {
-        if (requiresVerification)
-          throw new Error(
-            "Csatlakozni csak megerősített e-mail címmel lehet. Erősítsd meg az e-mailed (lásd a megerősítő levelet), vagy hozz létre saját családot."
-          );
-        if (!code.trim()) throw new Error("Add meg a meghívó kódot.");
+        if (requiresVerification) throw new Error(t("setup.errVerifyRequired"));
+        if (!code.trim()) throw new Error(t("setup.errInviteCode"));
         await joinHousehold(user.uid, displayName, code.trim());
       }
       router.replace("/(tabs)");
     } catch (e: any) {
-      setError(e?.message ?? "Ismeretlen hiba");
+      setError(e?.message ?? t("common.unknownError"));
     } finally {
       setLoading(false);
     }
@@ -58,10 +57,8 @@ export default function Setup() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Title>Szia, {displayName}!</Title>
-          <Subtitle style={{ marginBottom: spacing.lg }}>
-            Hozz létre egy családot, vagy csatlakozz egy meglévőhöz meghívó kóddal.
-          </Subtitle>
+          <Title>{t("setup.greeting", { name: displayName })}</Title>
+          <Subtitle style={{ marginBottom: spacing.lg }}>{t("setup.subtitle")}</Subtitle>
 
           <View style={styles.tabs}>
             <Pressable
@@ -69,7 +66,7 @@ export default function Setup() {
               onPress={() => setMode("create")}
             >
               <Text style={[styles.tabText, mode === "create" && styles.tabTextActive]}>
-                Új család
+                {t("setup.tabCreate")}
               </Text>
             </Pressable>
             <Pressable
@@ -77,7 +74,7 @@ export default function Setup() {
               onPress={() => setMode("join")}
             >
               <Text style={[styles.tabText, mode === "join" && styles.tabTextActive]}>
-                Csatlakozás
+                {t("setup.tabJoin")}
               </Text>
             </Pressable>
           </View>
@@ -85,9 +82,9 @@ export default function Setup() {
           <Card style={{ gap: spacing.md }}>
             {mode === "create" ? (
               <>
-                <Text style={styles.label}>Család / háztartás neve</Text>
+                <Text style={styles.label}>{t("setup.householdNameLabel")}</Text>
                 <Input
-                  placeholder="pl. Kovács család"
+                  placeholder={t("setup.householdNamePlaceholder")}
                   value={householdName}
                   onChangeText={setHouseholdName}
                   autoCapitalize="words"
@@ -95,22 +92,17 @@ export default function Setup() {
               </>
             ) : (
               <>
-                <Text style={styles.label}>Meghívó kód</Text>
+                <Text style={styles.label}>{t("setup.inviteCodeLabel")}</Text>
                 <Input
-                  placeholder="pl. K7P2QX"
+                  placeholder={t("setup.inviteCodePlaceholder")}
                   value={code}
-                  onChangeText={(t) => setCode(t.toUpperCase())}
+                  onChangeText={(v) => setCode(v.toUpperCase())}
                   autoCapitalize="characters"
                   autoCorrect={false}
                 />
-                <Text style={styles.hint}>
-                  A kódot egy családtagtól kapod, a Beállítások képernyőről tudja megosztani.
-                </Text>
+                <Text style={styles.hint}>{t("setup.inviteHint")}</Text>
                 {requiresVerification ? (
-                  <Text style={styles.warn}>
-                    A csatlakozáshoz előbb erősítsd meg az e-mail címed (lásd a
-                    megerősítő levelet a postaládádban, a spam mappát is nézd meg).
-                  </Text>
+                  <Text style={styles.warn}>{t("setup.verifyWarn")}</Text>
                 ) : null}
               </>
             )}
@@ -118,7 +110,7 @@ export default function Setup() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <Button
-              title={mode === "create" ? "Család létrehozása" : "Csatlakozás"}
+              title={mode === "create" ? t("setup.createHousehold") : t("setup.join")}
               onPress={submit}
               loading={loading}
               disabled={mode === "join" && requiresVerification}
@@ -126,7 +118,7 @@ export default function Setup() {
           </Card>
 
           <Button
-            title="Kijelentkezés"
+            title={t("setup.signOut")}
             variant="secondary"
             style={{ marginTop: spacing.xl }}
             onPress={async () => {

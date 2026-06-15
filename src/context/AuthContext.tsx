@@ -29,6 +29,8 @@ import {
   UserProfile,
 } from "../lib/firestore";
 import { humanizeAuthError } from "../lib/authErrors";
+import { translate } from "../i18n/translate";
+import { normalizeLocale } from "../i18n/types";
 import { Household } from "../types";
 
 interface AuthContextValue {
@@ -117,6 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [profile?.householdId]);
 
+  const authT = (key: string) =>
+    translate(normalizeLocale(profile?.locale), key);
+
   const signInAnon = async (name: string) => {
     const cred = await signInAnonymously(auth);
     if (name) await updateProfile(cred.user, { displayName: name });
@@ -132,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await sendEmailVerification(cred.user);
     } catch (e: any) {
       // A fiók létrejött; a megerősítő levél hibáját külön jelezzük.
-      setVerificationError(humanizeAuthError(e?.message ?? "Ismeretlen hiba"));
+      setVerificationError(humanizeAuthError(e?.message ?? "", authT));
     }
   };
 
@@ -155,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await sendEmailVerification(result.user);
     } catch (e: any) {
-      setVerificationError(humanizeAuthError(e?.message ?? "Ismeretlen hiba"));
+      setVerificationError(humanizeAuthError(e?.message ?? "", authT));
     }
     setUser(auth.currentUser);
     setAuthVersion((v) => v + 1);
@@ -188,7 +193,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const displayName =
-    profile?.displayName || user?.displayName || "Vendég";
+    profile?.displayName ||
+    user?.displayName ||
+    translate(normalizeLocale(profile?.locale), "common.guest");
   const isAnonymous = user?.isAnonymous ?? false;
   const emailVerified = user?.emailVerified ?? false;
   const email = user?.email ?? null;

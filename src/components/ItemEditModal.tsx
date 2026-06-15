@@ -11,6 +11,7 @@ import {
 import { Button, Input } from "./ui";
 import { ListItem } from "../types";
 import { formatItemNameInput } from "../lib/itemName";
+import { useTranslation } from "../context/LocaleContext";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
 
@@ -43,15 +45,15 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel="Bezárás" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t("common.close")} />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.kav}
         >
           <View style={styles.sheet}>
-            <Text style={styles.title}>Tétel szerkesztése</Text>
+            <Text style={styles.title}>{t("itemEdit.title")}</Text>
             <Input
-              placeholder="Név"
+              placeholder={t("catalog.namePlaceholder")}
               value={name}
               onChangeText={(text) => setName(formatItemNameInput(text))}
               autoFocus
@@ -60,16 +62,16 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
               autoCorrect={false}
             />
             <Input
-              placeholder="Mennyiség (pl. 2 db, 1 kg)"
+              placeholder={t("itemEdit.qtyPlaceholder")}
               value={quantity}
               onChangeText={setQuantity}
               returnKeyType="done"
               onSubmitEditing={save}
             />
             <View style={styles.row}>
-              <Button title="Mégse" variant="secondary" style={{ flex: 1 }} onPress={onCancel} />
+              <Button title={t("common.cancel")} variant="secondary" style={{ flex: 1 }} onPress={onCancel} />
               <Button
-                title="Mentés"
+                title={t("common.save")}
                 style={{ flex: 1 }}
                 disabled={!name.trim()}
                 onPress={save}

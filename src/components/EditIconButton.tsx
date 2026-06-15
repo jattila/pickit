@@ -1,16 +1,18 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
 import { useFontScale } from "../context/FontScaleContext";
+import { useTranslation } from "../context/LocaleContext";
 
 /** Apró, halvány szerkesztés gomb – kiegészíti a hosszú nyomásos menüt. */
 export function EditIconButton({ onPress }: { onPress: () => void }) {
   const { scale: fs } = useFontScale();
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
-      accessibilityLabel="Szerkesztés"
+      accessibilityLabel={t("common.edit")}
     >
       <Text style={[styles.icon, { fontSize: fs(13) }]}>✏️</Text>
     </Pressable>

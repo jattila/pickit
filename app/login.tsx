@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
+import { useTranslation } from "../src/context/LocaleContext";
 import { Button, Input, Title, Subtitle } from "../src/components/ui";
 import { InputModal } from "../src/components/InputModal";
 import { humanizeAuthError } from "../src/lib/authErrors";
@@ -22,6 +23,7 @@ type Mode = "quick" | "signin" | "signup";
 export default function Login() {
   const { user, signInAnon, signInEmail, signUpEmail, resetPassword } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("quick");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -42,9 +44,9 @@ export default function Login() {
     setInfo(null);
     try {
       await resetPassword(value);
-      setInfo("Elküldtük a jelszó-visszaállító e-mailt. Nézd meg a postaládád (a spam mappát is).");
+      setInfo(t("login.resetSent"));
     } catch (e: any) {
-      setError(humanizeAuthError(e?.message ?? "Ismeretlen hiba"));
+      setError(humanizeAuthError(e?.message ?? "", t));
     }
   };
 
@@ -53,23 +55,23 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === "quick") {
-        if (!name.trim()) throw new Error("Add meg a neved.");
+        if (!name.trim()) throw new Error(t("auth.enterName"));
         await signInAnon(name.trim());
       } else if (mode === "signin") {
-        if (!email.trim() || !password) throw new Error("Add meg az e-mailt és a jelszót.");
+        if (!email.trim() || !password) throw new Error(t("auth.enterEmailPassword"));
         await signInEmail(email, password);
       } else {
-        if (!name.trim()) throw new Error("Add meg a neved.");
-        if (password.length < 6) throw new Error("A jelszó legalább 6 karakter legyen.");
+        if (!name.trim()) throw new Error(t("auth.enterName"));
+        if (password.length < 6) throw new Error(t("auth.weakPassword"));
         await signUpEmail(name.trim(), email, password);
         Alert.alert(
-          "Sikeres regisztráció",
-          `Küldtünk egy megerősítő e-mailt a(z) ${email.trim()} címre. Ha nem találod, nézd meg a levélszemét (spam) mappát is.`
+          t("login.signupSuccessTitle"),
+          t("login.signupSuccessBody", { email: email.trim() })
         );
       }
       router.replace("/");
     } catch (e: any) {
-      setError(humanizeAuthError(e?.message ?? "Ismeretlen hiba"));
+      setError(humanizeAuthError(e?.message ?? "", t));
     } finally {
       setLoading(false);
     }
@@ -88,20 +90,18 @@ export default function Login() {
             </View>
             <Title>PickIt</Title>
           </View>
-          <Subtitle style={{ marginBottom: spacing.lg }}>
-            Közös bevásárlólista a családnak – valós időben szinkronizálva.
-          </Subtitle>
+          <Subtitle style={{ marginBottom: spacing.lg }}>{t("login.subtitle")}</Subtitle>
 
           <View style={styles.tabs}>
-            <Tab label="Gyors kezdés" active={mode === "quick"} onPress={() => setMode("quick")} />
-            <Tab label="Belépés" active={mode === "signin"} onPress={() => setMode("signin")} />
-            <Tab label="Regisztráció" active={mode === "signup"} onPress={() => setMode("signup")} />
+            <Tab label={t("login.tabQuick")} active={mode === "quick"} onPress={() => setMode("quick")} />
+            <Tab label={t("login.tabSignIn")} active={mode === "signin"} onPress={() => setMode("signin")} />
+            <Tab label={t("login.tabSignUp")} active={mode === "signup"} onPress={() => setMode("signup")} />
           </View>
 
           <View style={styles.form}>
             {(mode === "quick" || mode === "signup") && (
               <Input
-                placeholder="Neved (pl. Anna)"
+                placeholder={t("login.namePlaceholder")}
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
@@ -110,14 +110,14 @@ export default function Login() {
             {(mode === "signin" || mode === "signup") && (
               <>
                 <Input
-                  placeholder="E-mail"
+                  placeholder={t("login.emailPlaceholder")}
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
                   keyboardType="email-address"
                 />
                 <Input
-                  placeholder="Jelszó"
+                  placeholder={t("login.passwordPlaceholder")}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -131,10 +131,10 @@ export default function Login() {
             <Button
               title={
                 mode === "quick"
-                  ? "Kezdés"
+                  ? t("login.start")
                   : mode === "signin"
-                  ? "Belépés"
-                  : "Fiók létrehozása"
+                  ? t("login.signIn")
+                  : t("login.createAccount")
               }
               onPress={submit}
               loading={loading}
@@ -142,26 +142,21 @@ export default function Login() {
 
             {mode === "signin" && (
               <Pressable onPress={() => setShowReset(true)} style={{ alignSelf: "center" }}>
-                <Text style={styles.link}>Elfelejtett jelszó?</Text>
+                <Text style={styles.link}>{t("login.forgotPassword")}</Text>
               </Pressable>
             )}
 
-            {mode === "quick" && (
-              <Text style={styles.hint}>
-                A gyors kezdéshez nem kell e-mail. Később bármikor regisztrálhatsz,
-                hogy más eszközről is elérd a listáidat.
-              </Text>
-            )}
+            {mode === "quick" && <Text style={styles.hint}>{t("login.quickHint")}</Text>}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <InputModal
         visible={showReset}
-        title="Jelszó visszaállítása"
-        placeholder="E-mail címed"
+        title={t("login.resetTitle")}
+        placeholder={t("login.resetEmailPlaceholder")}
         initialValue={email}
-        confirmLabel="Küldés"
+        confirmLabel={t("common.send")}
         onCancel={() => setShowReset(false)}
         onConfirm={handleReset}
       />
@@ -180,10 +175,7 @@ function Tab({
 }) {
   const styles = useStyles();
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.tab, active && styles.tabActive]}
-    >
+    <Pressable onPress={onPress} style={[styles.tab, active && styles.tabActive]}>
       <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
     </Pressable>
   );

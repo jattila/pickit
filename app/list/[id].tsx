@@ -38,6 +38,7 @@ import { formatItemNameInput, itemNameKey, normalizeItemName } from "../../src/l
 import { isAlreadyCheckedOnList } from "../../src/lib/listItems";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
+import { useTranslation } from "../../src/context/LocaleContext";
 
 export default function ListDetail() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -64,6 +65,7 @@ export default function ListDetail() {
   const addBarBottom = Platform.OS === "ios" ? keyboardHeight : 0;
   const listPadExtra = Platform.OS === "ios" ? keyboardHeight : 0;
   const styles = useStyles();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!householdId || !id) return;
@@ -77,7 +79,7 @@ export default function ListDetail() {
     return unsub;
   }, [householdId, id]);
 
-  const listName = listMeta?.name ?? name ?? "Bevásárlólista";
+  const listName = listMeta?.name ?? name ?? t("listDetail.defaultName");
 
   useEffect(() => {
     if (!householdId) return;
@@ -113,10 +115,7 @@ export default function ListDetail() {
     const quantity = (quantityOverride ?? qty).trim();
     if (!name) return;
     if (isAlreadyCheckedOnList(name, items ?? [])) {
-      Alert.alert(
-        "Már megvan",
-        "Ez a tétel már be van jelölve a listán – valaki már megvette."
-      );
+      Alert.alert(t("listDetail.alreadyBoughtTitle"), t("listDetail.alreadyBoughtBody"));
       return;
     }
     setDraft("");
@@ -145,21 +144,18 @@ export default function ListDetail() {
       setEditingItem(null);
     } catch (err) {
       Alert.alert(
-        "Mentés sikertelen",
-        err instanceof Error ? err.message : "Ismeretlen hiba történt."
+        t("listDetail.saveFailed"),
+        err instanceof Error ? err.message : t("common.unknownErrorOccurred")
       );
     }
   };
 
   const confirmClear = () => {
     if (done === 0) return;
-    Alert.alert(
-      "Bejelöltek törlése",
-      `Eltávolítod a ${done} megvásárolt tételt a listáról?`,
-      [
-        { text: "Mégse", style: "cancel" },
-        {
-          text: "Törlés",
+    Alert.alert(t("listDetail.clearCheckedTitle"), t("listDetail.clearCheckedBody", { count: done }), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
           style: "destructive",
           onPress: () => householdId && clearCheckedItems(householdId, id),
         },
@@ -175,33 +171,33 @@ export default function ListDetail() {
       router.setParams({ name: newName });
     } catch (err) {
       Alert.alert(
-        "Átnevezés sikertelen",
-        err instanceof Error ? err.message : "Ismeretlen hiba történt."
+        t("listDetail.renameFailed"),
+        err instanceof Error ? err.message : t("common.unknownErrorOccurred")
       );
     }
   };
 
   const openListMenu = () => {
     Alert.alert(listName, undefined, [
-      { text: "Átnevezés", onPress: () => setShowRename(true) },
+      { text: t("listDetail.menuRename"), onPress: () => setShowRename(true) },
       {
-        text: "Lista archiválása",
+        text: t("listDetail.menuArchive"),
         onPress: () => householdId && setListArchived(householdId, id, true).then(() => router.back()),
       },
       {
-        text: "Lista törlése",
+        text: t("listDetail.menuDelete"),
         style: "destructive",
         onPress: () =>
-          Alert.alert("Biztosan törlöd?", "A lista és minden tétele véglegesen törlődik.", [
-            { text: "Mégse", style: "cancel" },
+          Alert.alert(t("listDetail.confirmDeleteTitle"), t("listDetail.confirmDeleteBody"), [
+            { text: t("common.cancel"), style: "cancel" },
             {
-              text: "Törlés",
+              text: t("common.delete"),
               style: "destructive",
               onPress: () => householdId && deleteList(householdId, id).then(() => router.back()),
             },
           ]),
       },
-      { text: "Mégse", style: "cancel" },
+      { text: t("common.cancel"), style: "cancel" },
     ]);
   };
 
@@ -217,7 +213,7 @@ export default function ListDetail() {
               {listName}
             </Text>
             <Text style={styles.sub}>
-              {total === 0 ? "Üres" : `${done}/${total} megvan`}
+              {total === 0 ? t("listDetail.empty") : t("listDetail.progress", { done, total })}
             </Text>
           </View>
           <Pressable onPress={openListMenu} hitSlop={12} style={styles.menuBtn}>
@@ -246,8 +242,8 @@ export default function ListDetail() {
             ListEmptyComponent={
               checked.length === 0 ? (
                 <EmptyState
-                  title="Üres a lista"
-                  subtitle="Írd be lent az első tételt, vagy válogass a korábban használtakból."
+                  title={t("listDetail.emptyTitle")}
+                  subtitle={t("listDetail.emptySubtitle")}
                 />
               ) : null
             }
@@ -263,9 +259,11 @@ export default function ListDetail() {
               checked.length > 0 ? (
                 <View style={styles.checkedSection}>
                   <View style={styles.checkedHeader}>
-                    <Text style={styles.checkedTitle}>Megvásárolva ({done})</Text>
+                    <Text style={styles.checkedTitle}>
+                      {t("listDetail.boughtSection", { count: done })}
+                    </Text>
                     <Pressable onPress={confirmClear} hitSlop={8}>
-                      <Text style={styles.clearText}>Törlés</Text>
+                      <Text style={styles.clearText}>{t("listDetail.clearBought")}</Text>
                     </Pressable>
                   </View>
                   {checked.map((item) => (
@@ -305,7 +303,7 @@ export default function ListDetail() {
           </Pressable>
           <TextInput
             style={styles.addInput}
-            placeholder="Új tétel…"
+            placeholder={t("listDetail.newItemPlaceholder")}
             placeholderTextColor={colors.textMuted}
             value={draft}
             onChangeText={(text) => setDraft(formatItemNameInput(text))}
@@ -317,7 +315,7 @@ export default function ListDetail() {
           />
           <TextInput
             style={styles.qtyInput}
-            placeholder="db"
+            placeholder={t("listDetail.qtyPlaceholder")}
             placeholderTextColor={colors.textMuted}
             value={qty}
             onChangeText={setQty}
@@ -352,8 +350,8 @@ export default function ListDetail() {
 
       <InputModal
         visible={showRename}
-        title="Lista átnevezése"
-        placeholder="Lista neve"
+        title={t("listDetail.renameTitle")}
+        placeholder={t("listDetail.renamePlaceholder")}
         initialValue={listName}
         onCancel={() => setShowRename(false)}
         onConfirm={handleRename}
@@ -374,6 +372,7 @@ function ItemRow({
   onDelete: () => void;
 }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   return (
     <View style={styles.item}>
       <Pressable
@@ -381,9 +380,9 @@ function ItemRow({
         onPress={onToggle}
         onLongPress={() =>
           Alert.alert(item.name, undefined, [
-            { text: "Szerkesztés", onPress: onEdit },
-            { text: "Törlés", style: "destructive", onPress: onDelete },
-            { text: "Mégse", style: "cancel" },
+            { text: t("common.edit"), onPress: onEdit },
+            { text: t("common.delete"), style: "destructive", onPress: onDelete },
+            { text: t("common.cancel"), style: "cancel" },
           ])
         }
       >
@@ -396,7 +395,9 @@ function ItemRow({
             {item.quantity ? <Text style={styles.itemQty}>  {item.quantity}</Text> : null}
           </Text>
           {item.checked && item.checkedByName ? (
-            <Text style={styles.checkedBy}>{item.checkedByName} bejelölte</Text>
+            <Text style={styles.checkedBy}>
+              {t("listDetail.checkedBy", { name: item.checkedByName })}
+            </Text>
           ) : null}
         </View>
       </Pressable>

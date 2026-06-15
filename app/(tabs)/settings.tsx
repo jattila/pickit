@@ -16,6 +16,8 @@ import { Card, Button } from "../../src/components/ui";
 import { LinkAccountModal } from "../../src/components/LinkAccountModal";
 import { humanizeAuthError } from "../../src/lib/authErrors";
 import { useFontScale } from "../../src/context/FontScaleContext";
+import { useTranslation } from "../../src/context/LocaleContext";
+import { AppLocale } from "../../src/i18n/types";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { colors, spacing, radius } from "../../src/theme";
 
@@ -38,6 +40,7 @@ export default function SettingsScreen() {
   const [showLink, setShowLink] = useState(false);
   const { label: fontScaleLabel, increase, decrease, canIncrease, canDecrease } =
     useFontScale();
+  const { t, locale, setLocale, supportedLocales, localeLabel } = useTranslation();
   const styles = useStyles();
 
   if (profile && !profile.householdId) {
@@ -47,21 +50,18 @@ export default function SettingsScreen() {
   const handleResend = async () => {
     try {
       await resendVerification();
-      Alert.alert("Elküldve", "Megerősítő e-mailt küldtünk. Nézd meg a postaládád (a spam mappát is).");
+      Alert.alert(t("common.sent"), t("settings.resendSuccess"));
     } catch (e: any) {
-      Alert.alert("Hiba", humanizeAuthError(e?.message ?? "Nem sikerült elküldeni."));
+      Alert.alert(t("common.error"), humanizeAuthError(e?.message ?? "", t));
     }
   };
 
   const handleRefreshVerify = async () => {
     const verified = await reloadUser();
     if (verified) {
-      Alert.alert("Kész", "Az e-mail címed megerősítve.");
+      Alert.alert(t("common.done"), t("settings.verifiedSuccess"));
     } else {
-      Alert.alert(
-        "Még nincs megerősítve",
-        "Kattints a levélben lévő linkre, majd próbáld újra."
-      );
+      Alert.alert(t("settings.notVerifiedYet"), t("settings.notVerifiedHint"));
     }
   };
 
@@ -71,7 +71,7 @@ export default function SettingsScreen() {
   const shareCode = async () => {
     try {
       await Share.share({
-        message: `Csatlakozz a(z) "${household?.name}" bevásárlólistához a PickIt appban! Meghívó kód: ${code}`,
+        message: t("settings.shareMessage", { name: household?.name ?? "", code }),
       });
     } catch {
       // megosztás megszakítva
@@ -80,17 +80,14 @@ export default function SettingsScreen() {
 
   const copyCode = async () => {
     await Clipboard.setStringAsync(code);
-    Alert.alert("Másolva", "A meghívó kód a vágólapra került.");
+    Alert.alert(t("common.copied"), t("settings.copySuccess"));
   };
 
   const confirmLeave = () => {
-    Alert.alert(
-      "Kilépés a családból",
-      "Biztosan kilépsz? A közös listákat nem fogod látni, amíg újra nem csatlakozol.",
-      [
-        { text: "Mégse", style: "cancel" },
-        {
-          text: "Kilépés",
+    Alert.alert(t("settings.leaveTitle"), t("settings.leaveBody"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("settings.leaveConfirm"),
           style: "destructive",
           onPress: async () => {
             if (!user || !household) return;
@@ -103,17 +100,17 @@ export default function SettingsScreen() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert("Kijelentkezés", "Biztosan kijelentkezel?", [
-      { text: "Mégse", style: "cancel" },
+    Alert.alert(t("settings.signOutTitle"), t("settings.signOutBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Kijelentkezés",
+        text: t("settings.signOut"),
         style: "destructive",
         onPress: async () => {
           try {
             await signOut();
             router.replace("/login");
           } catch (e: any) {
-            Alert.alert("Hiba", humanizeAuthError(e?.message ?? "Nem sikerült kijelentkezni."));
+            Alert.alert(t("common.error"), humanizeAuthError(e?.message ?? "", t));
           }
         },
       },
@@ -123,22 +120,19 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.h1}>Beállítások</Text>
+        <Text style={styles.h1}>{t("settings.title")}</Text>
 
         <Card style={{ gap: spacing.sm }}>
-          <Text style={styles.label}>Bejelentkezve mint</Text>
+          <Text style={styles.label}>{t("settings.signedInAs")}</Text>
           <Text style={styles.value}>{displayName}</Text>
 
           {isAnonymous ? (
             <>
               <View style={styles.statusRow}>
                 <View style={[styles.dot, { backgroundColor: colors.accent }]} />
-                <Text style={styles.note}>
-                  Vendég fiók – csak ezen az eszközön. Hozz létre fiókot, hogy más
-                  eszközről is elérd a listáid (az adataid megmaradnak).
-                </Text>
+                <Text style={styles.note}>{t("settings.guestNote")}</Text>
               </View>
-              <Button title="Fiók létrehozása e-maillel" onPress={() => setShowLink(true)} />
+              <Button title={t("settings.createEmailAccount")} onPress={() => setShowLink(true)} />
             </>
           ) : (
             <>
@@ -146,31 +140,28 @@ export default function SettingsScreen() {
               {emailVerified ? (
                 <View style={styles.statusRow}>
                   <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                  <Text style={styles.note}>E-mail megerősítve ✓</Text>
+                  <Text style={styles.note}>{t("settings.emailVerified")}</Text>
                 </View>
               ) : (
                 <>
                   <View style={styles.statusRow}>
                     <View style={[styles.dot, { backgroundColor: colors.accent }]} />
-                    <Text style={styles.note}>
-                      Az e-mail címed még nincs megerősítve. Nézd meg a postaládád
-                      (a spam mappát is).
-                    </Text>
+                    <Text style={styles.note}>{t("settings.emailNotVerified")}</Text>
                   </View>
                   {verificationError ? (
                     <Text style={styles.errorNote}>
-                      A megerősítő levél küldése nem sikerült: {verificationError}
+                      {t("settings.resendFailed", { error: verificationError })}
                     </Text>
                   ) : null}
                   <View style={styles.btnRow}>
                     <Button
-                      title="Újraküldés"
+                      title={t("settings.resend")}
                       variant="secondary"
                       style={{ flex: 1 }}
                       onPress={handleResend}
                     />
                     <Button
-                      title="Frissítés"
+                      title={t("settings.refresh")}
                       variant="secondary"
                       style={{ flex: 1 }}
                       onPress={handleRefreshVerify}
@@ -183,7 +174,7 @@ export default function SettingsScreen() {
         </Card>
 
         <Card style={{ gap: spacing.sm }}>
-          <Text style={styles.label}>Betűméret</Text>
+          <Text style={styles.label}>{t("settings.fontSize")}</Text>
           <View style={styles.fontScaleRow}>
             <Pressable
               onPress={decrease}
@@ -201,42 +192,53 @@ export default function SettingsScreen() {
               <Text style={styles.fontScaleBtnText}>A+</Text>
             </Pressable>
           </View>
-          <Text style={styles.note}>
-            A beállítás csak neked vonatkozik, és minden eszközön szinkronban marad.
-          </Text>
+          <Text style={styles.note}>{t("settings.fontSizeNote")}</Text>
         </Card>
 
         <Card style={{ gap: spacing.sm }}>
-          <Text style={styles.label}>Család</Text>
+          <Text style={styles.label}>{t("language.title")}</Text>
+          <View style={styles.langRow}>
+            {supportedLocales.map((loc: AppLocale) => (
+              <Pressable
+                key={loc}
+                onPress={() => setLocale(loc)}
+                style={[styles.langBtn, locale === loc && styles.langBtnActive]}
+              >
+                <Text style={[styles.langBtnText, locale === loc && styles.langBtnTextActive]}>
+                  {localeLabel(loc)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.note}>{t("language.note")}</Text>
+        </Card>
+
+        <Card style={{ gap: spacing.sm }}>
+          <Text style={styles.label}>{t("settings.family")}</Text>
           <Text style={styles.value}>{household?.name}</Text>
 
-          <Text style={[styles.label, { marginTop: spacing.md }]}>Meghívó kód</Text>
+          <Text style={[styles.label, { marginTop: spacing.md }]}>{t("settings.inviteCode")}</Text>
           {requiresVerification ? (
             <>
               <View style={styles.codeBoxLocked}>
                 <Text style={styles.codeLocked}>• • • • • •</Text>
               </View>
-              <Text style={styles.errorNote}>
-                A meghívó kód megosztásához előbb erősítsd meg az e-mail címed.
-              </Text>
+              <Text style={styles.errorNote}>{t("settings.inviteVerifyRequired")}</Text>
             </>
           ) : (
             <>
               <Pressable onPress={copyCode} style={styles.codeBox}>
                 <Text style={styles.code}>{code}</Text>
-                <Text style={styles.copyHint}>koppints a másoláshoz</Text>
+                <Text style={styles.copyHint}>{t("settings.tapToCopy")}</Text>
               </Pressable>
-              <Button title="Meghívó megosztása" onPress={shareCode} />
-              <Text style={styles.note}>
-                Oszd meg ezt a kódot a családtagjaiddal. Ha beírják a „Csatlakozás"
-                képernyőn, máris közösen használhatjátok a listákat – valós időben.
-              </Text>
+              <Button title={t("settings.shareInvite")} onPress={shareCode} />
+              <Text style={styles.note}>{t("settings.inviteNote")}</Text>
             </>
           )}
         </Card>
 
         <Card style={{ gap: spacing.sm }}>
-          <Text style={styles.label}>Tagok ({members.length})</Text>
+          <Text style={styles.label}>{t("settings.members", { count: members.length })}</Text>
           {members.map((m) => (
             <View key={m.uid} style={styles.member}>
               <View style={styles.avatar}>
@@ -246,16 +248,16 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.memberName}>
                 {m.displayName}
-                {m.uid === user?.uid ? "  (te)" : ""}
+                {m.uid === user?.uid ? `  (${t("common.you")})` : ""}
               </Text>
             </View>
           ))}
         </Card>
 
         <Card style={{ gap: spacing.sm, marginTop: spacing.md }}>
-          <Text style={styles.label}>Fiók műveletek</Text>
-          <Button title="Kilépés a családból" variant="secondary" onPress={confirmLeave} />
-          <Button title="Kijelentkezés" variant="danger" onPress={confirmSignOut} />
+          <Text style={styles.label}>{t("settings.accountActions")}</Text>
+          <Button title={t("settings.leaveHousehold")} variant="secondary" onPress={confirmLeave} />
+          <Button title={t("settings.signOut")} variant="danger" onPress={confirmSignOut} />
         </Card>
       </ScrollView>
 
@@ -264,10 +266,7 @@ export default function SettingsScreen() {
         onClose={() => setShowLink(false)}
         onLinked={() => {
           setShowLink(false);
-          Alert.alert(
-            "Fiók létrehozva",
-            "Mostantól az e-mailedddel is be tudsz lépni. Küldtünk egy megerősítő levelet – ha nem találod, nézd meg a levélszemét (spam) mappát is."
-          );
+          Alert.alert(t("settings.linkAccountSuccessTitle"), t("settings.linkAccountSuccessBody"));
         }}
       />
     </SafeAreaView>
@@ -315,6 +314,18 @@ function useStyles() {
       minWidth: 120,
       textAlign: "center",
     },
+    langRow: { flexDirection: "row", gap: spacing.sm },
+    langBtn: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xs,
+      borderRadius: radius.md,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: "center",
+    },
+    langBtnActive: { backgroundColor: colors.primarySoft },
+    langBtnText: { fontSize: fs(13), fontWeight: "600", color: colors.textMuted },
+    langBtnTextActive: { color: colors.primaryDark, fontWeight: "700" },
     codeBox: {
       backgroundColor: colors.primarySoft,
       borderRadius: radius.md,

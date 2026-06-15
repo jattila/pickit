@@ -3,6 +3,7 @@ import { Text } from "react-native";
 import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { useFontScale } from "../../src/context/FontScaleContext";
+import { useTranslation } from "../../src/context/LocaleContext";
 import { colors } from "../../src/theme";
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
@@ -13,6 +14,7 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 export default function TabsLayout() {
   const { user } = useAuth();
   const { scale: fs } = useFontScale();
+  const { t } = useTranslation();
 
   if (!user) {
     return <Redirect href="/login" />;
@@ -36,21 +38,21 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Listák",
+          title: t("tabs.lists"),
           tabBarIcon: ({ focused }) => <TabIcon emoji="📝" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="catalog"
         options={{
-          title: "Katalógus",
+          title: t("tabs.catalog"),
           tabBarIcon: ({ focused }) => <TabIcon emoji="🗂️" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Beállítások",
+          title: t("tabs.settings"),
           tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
         }}
       />

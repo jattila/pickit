@@ -2,17 +2,15 @@ import React, { useState } from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "../context/LocaleContext";
 import { humanizeAuthError } from "../lib/authErrors";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
-/**
- * Emlékeztető sáv a meg nem erősített e-mailes fiókoknak.
- * Anonim (vendég) és már megerősített fióknál nem jelenik meg.
- */
 export function VerifyEmailBanner() {
   const { requiresVerification, resendVerification, reloadUser } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -25,13 +23,12 @@ export function VerifyEmailBanner() {
     setBusy(true);
     setError(null);
     try {
-      // Hátha időközben megerősítette egy másik eszközön.
       const verified = await reloadUser();
       if (verified) return;
       await resendVerification();
       setSent(true);
     } catch (e: any) {
-      setError(humanizeAuthError(e?.message ?? "Ismeretlen hiba"));
+      setError(humanizeAuthError(e?.message ?? "", t));
     } finally {
       setBusy(false);
     }
@@ -41,13 +38,9 @@ export function VerifyEmailBanner() {
     <Pressable style={styles.banner} onPress={() => router.push("/(tabs)/settings")}>
       <Text style={styles.emoji}>✉️</Text>
       <View style={{ flex: 1 }}>
-        <Text style={styles.title}>Erősítsd meg az e-mail címed</Text>
+        <Text style={styles.title}>{t("verifyBanner.title")}</Text>
         <Text style={styles.sub}>
-          {error
-            ? error
-            : sent
-            ? "Elküldtük újra. Nézd meg a postaládád (a spam mappát is)."
-            : "A jelszó-visszaállításhoz és a megosztáshoz szükséges."}
+          {error ? error : sent ? t("verifyBanner.resentSub") : t("verifyBanner.defaultSub")}
         </Text>
       </View>
       {busy ? (
@@ -55,7 +48,7 @@ export function VerifyEmailBanner() {
       ) : (
         <View style={styles.actions}>
           <Pressable onPress={resend} hitSlop={8}>
-            <Text style={styles.action}>Újraküldés</Text>
+            <Text style={styles.action}>{t("verifyBanner.resend")}</Text>
           </Pressable>
           <Pressable onPress={() => setDismissed(true)} hitSlop={8}>
             <Text style={styles.dismiss}>✕</Text>

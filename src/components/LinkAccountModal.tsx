@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Button, Input } from "./ui";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "../context/LocaleContext";
 import { humanizeAuthError } from "../lib/authErrors";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
@@ -23,6 +24,7 @@ interface Props {
 /** Anonim (vendég) fiók összekapcsolása e-maillel és jelszóval. */
 export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
   const { displayName, linkEmail } = useAuth();
+  const { t } = useTranslation();
   const [name, setName] = useState(displayName);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,11 +43,11 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
   const submit = async () => {
     setError(null);
     if (!email.trim()) {
-      setError("Add meg az e-mail címed.");
+      setError(t("auth.enterEmail"));
       return;
     }
     if (password.length < 6) {
-      setError("A jelszó legalább 6 karakter legyen.");
+      setError(t("auth.weakPassword"));
       return;
     }
     setLoading(true);
@@ -53,7 +55,7 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
       await linkEmail(name.trim(), email, password);
       onLinked();
     } catch (e: any) {
-      setError(humanizeAuthError(e?.message ?? "Ismeretlen hiba"));
+      setError(humanizeAuthError(e?.message ?? "", t));
     } finally {
       setLoading(false);
     }
@@ -69,29 +71,26 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
           style={styles.kav}
         >
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.title}>Fiók létrehozása</Text>
-            <Text style={styles.lead}>
-              Add meg az e-mailed és egy jelszót. A jelenlegi listáid és a családod
-              megmaradnak – csak mostantól más eszközről is be tudsz lépni.
-            </Text>
-            <Input placeholder="Neved" value={name} onChangeText={setName} autoCapitalize="words" />
+            <Text style={styles.title}>{t("linkAccount.title")}</Text>
+            <Text style={styles.lead}>{t("linkAccount.lead")}</Text>
+            <Input placeholder={t("linkAccount.namePlaceholder")} value={name} onChangeText={setName} autoCapitalize="words" />
             <Input
-              placeholder="E-mail"
+              placeholder={t("login.emailPlaceholder")}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
             />
             <Input
-              placeholder="Jelszó (min. 6 karakter)"
+              placeholder={t("linkAccount.passwordPlaceholder")}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <View style={styles.row}>
-              <Button title="Mégse" variant="secondary" style={{ flex: 1 }} onPress={onClose} />
-              <Button title="Mentés" style={{ flex: 1 }} onPress={submit} loading={loading} />
+              <Button title={t("common.cancel")} variant="secondary" style={{ flex: 1 }} onPress={onClose} />
+              <Button title={t("common.save")} style={{ flex: 1 }} onPress={submit} loading={loading} />
             </View>
           </Pressable>
         </KeyboardAvoidingView>

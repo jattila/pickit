@@ -19,10 +19,12 @@ import { InputModal } from "../../src/components/InputModal";
 import { VerifyEmailBanner } from "../../src/components/VerifyEmailBanner";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
+import { useTranslation } from "../../src/context/LocaleContext";
 
 export default function ListsScreen() {
   const { user, profile, household } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [lists, setLists] = useState<ShoppingList[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const styles = useStyles();
@@ -52,8 +54,8 @@ export default function ListsScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.eyebrow}>{household?.name ?? "Család"}</Text>
-          <Text style={styles.h1}>Bevásárlólisták</Text>
+          <Text style={styles.eyebrow}>{household?.name ?? t("common.household")}</Text>
+          <Text style={styles.h1}>{t("lists.title")}</Text>
         </View>
       </View>
 
@@ -70,8 +72,8 @@ export default function ListsScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <EmptyState
-              title="Még nincs listád"
-              subtitle="Hozz létre egy új bevásárlólistát, és add hozzá a tételeket."
+              title={t("lists.emptyTitle")}
+              subtitle={t("lists.emptySubtitle")}
             />
           }
           renderItem={({ item }) => (
@@ -91,9 +93,9 @@ export default function ListsScreen() {
 
       <InputModal
         visible={showCreate}
-        title="Új bevásárlólista"
-        placeholder="pl. Heti nagybevásárlás"
-        confirmLabel="Létrehozás"
+        title={t("lists.newListTitle")}
+        placeholder={t("lists.newListPlaceholder")}
+        confirmLabel={t("common.create")}
         onCancel={() => setShowCreate(false)}
         onConfirm={handleCreate}
       />
@@ -103,6 +105,7 @@ export default function ListsScreen() {
 
 function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void }) {
   const styles = useStyles();
+  const { t } = useTranslation();
   const total = list.itemCount ?? 0;
   const done = list.checkedCount ?? 0;
   const progress = total > 0 ? done / total : 0;
@@ -122,10 +125,10 @@ function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void })
         <ProgressBar value={progress} />
         <Text style={styles.rowMeta}>
           {total === 0
-            ? "Üres lista"
+            ? t("lists.emptyList")
             : allDone
-            ? "Minden megvan ✓"
-            : `${total - done} tétel hátravan`}
+            ? t("lists.allDone")
+            : t("lists.itemsRemaining", { count: total - done })}
         </Text>
       </Card>
     </Pressable>

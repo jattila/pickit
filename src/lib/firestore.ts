@@ -29,6 +29,7 @@ import {
 } from "../types";
 import { normalizeItemName } from "./itemName";
 import { clampFontScaleLevel } from "../theme/fontScale";
+import { normalizeLocale, type AppLocale } from "../i18n/types";
 
 /* ----------------------------- segédfüggvények ---------------------------- */
 
@@ -53,6 +54,7 @@ export interface UserProfile {
   displayName: string;
   householdId: ID | null;
   fontScaleLevel?: number;
+  locale?: AppLocale;
 }
 
 export async function getUserProfile(uid: ID): Promise<UserProfile | null> {
@@ -81,7 +83,7 @@ export async function ensureUserProfile(
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    await setDoc(ref, { displayName, householdId: null, fontScaleLevel: 0 });
+    await setDoc(ref, { displayName, householdId: null, fontScaleLevel: 0, locale: "hu" });
   } else if (displayName) {
     await updateDoc(ref, { displayName });
   }
@@ -90,6 +92,12 @@ export async function ensureUserProfile(
 export async function updateUserFontScale(uid: ID, fontScaleLevel: number): Promise<void> {
   await updateDoc(doc(db, "users", uid), {
     fontScaleLevel: clampFontScaleLevel(fontScaleLevel),
+  });
+}
+
+export async function updateUserLocale(uid: ID, locale: AppLocale): Promise<void> {
+  await updateDoc(doc(db, "users", uid), {
+    locale: normalizeLocale(locale),
   });
 }
 

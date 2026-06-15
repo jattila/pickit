@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { FontScaleProvider } from "../src/context/FontScaleContext";
+import { LocaleProvider } from "../src/context/LocaleContext";
 import { NetworkProvider } from "../src/context/NetworkContext";
 import { NotConfigured } from "../src/components/NotConfigured";
 import { OfflineBanner } from "../src/components/OfflineBanner";
@@ -49,10 +50,12 @@ function RootLayout() {
       <SafeAreaProvider>
         <NetworkProvider>
           <AuthProvider>
-            <FontScaleProvider>
-              <StatusBar style="dark" />
-              <RootNavigator />
-            </FontScaleProvider>
+            <LocaleProvider>
+              <FontScaleProvider>
+                <StatusBar style="dark" />
+                <RootNavigator />
+              </FontScaleProvider>
+            </LocaleProvider>
           </AuthProvider>
         </NetworkProvider>
       </SafeAreaProvider>

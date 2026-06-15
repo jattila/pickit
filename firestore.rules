@@ -23,6 +23,11 @@ service cloud.firestore {
       return v is string && v.size() >= minLen && v.size() <= maxLen;
     }
 
+    function localeOk(data) {
+      return !('locale' in data)
+        || data.locale in ['hu', 'en', 'de'];
+    }
+
     function fontScaleOk(data) {
       return !('fontScaleLevel' in data)
         || (data.fontScaleLevel is int
@@ -36,7 +41,8 @@ service cloud.firestore {
       allow create, update: if signedIn()
         && request.auth.uid == userId
         && strLen(request.resource.data.displayName, 1, 100)
-        && fontScaleOk(request.resource.data);
+        && fontScaleOk(request.resource.data)
+        && localeOk(request.resource.data);
       allow delete: if false;
     }
 

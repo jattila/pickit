@@ -6,6 +6,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { useLocale } from "./LocaleContext";
 import { updateUserFontScale } from "../lib/firestore";
 import {
   clampFontScaleLevel,
@@ -39,6 +40,7 @@ const FontScaleContext = createContext<FontScaleContextValue>(defaultValue);
 
 export function FontScaleProvider({ children }: { children: ReactNode }) {
   const { user, profile } = useAuth();
+  const { t } = useLocale();
   const level = clampFontScaleLevel(profile?.fontScaleLevel ?? 0);
 
   const persist = useCallback(
@@ -62,14 +64,14 @@ export function FontScaleProvider({ children }: { children: ReactNode }) {
   const value = useMemo<FontScaleContextValue>(
     () => ({
       level,
-      label: fontScaleLabel(level),
+      label: fontScaleLabel(level, t),
       scale: (size: number) => scaleFontSize(size, level),
       increase,
       decrease,
       canIncrease: level < MAX_FONT_SCALE_LEVEL,
       canDecrease: level > MIN_FONT_SCALE_LEVEL,
     }),
-    [level, increase, decrease]
+    [level, increase, decrease, t]
   );
 
   return (

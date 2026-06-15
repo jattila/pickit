@@ -2,16 +2,14 @@ import React from "react";
 import { View, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNetwork } from "../context/NetworkContext";
+import { useTranslation } from "../context/LocaleContext";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
-/**
- * Offline állapot jelzése – overlay a képernyő tetején, nem zsugorítja a tartalmat.
- * A képernyők a useOfflineBannerInset() hookkal igazíthatók.
- */
 export function OfflineBanner() {
   const { isOffline } = useNetwork();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const styles = useStyles();
 
   if (!isOffline) return null;
@@ -24,10 +22,8 @@ export function OfflineBanner() {
       <View style={styles.banner}>
         <Text style={styles.emoji}>📡</Text>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Offline mód</Text>
-          <Text style={styles.sub}>
-            A listák a telefonon maradnak. Szinkronizálás, amint van internet.
-          </Text>
+          <Text style={styles.title}>{t("offlineBanner.title")}</Text>
+          <Text style={styles.sub}>{t("offlineBanner.sub")}</Text>
         </View>
       </View>
     </View>

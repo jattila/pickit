@@ -9,6 +9,7 @@ import {
   Pressable,
 } from "react-native";
 import { Button, Input } from "./ui";
+import { useTranslation } from "../context/LocaleContext";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
@@ -27,22 +28,23 @@ export function InputModal({
   title,
   placeholder,
   initialValue = "",
-  confirmLabel = "Mentés",
+  confirmLabel,
   onCancel,
   onConfirm,
 }: Props) {
+  const { t } = useTranslation();
   const [value, setValue] = useState(initialValue);
+  const styles = useStyles();
+  const confirm = confirmLabel ?? t("common.save");
 
   useEffect(() => {
     if (visible) setValue(initialValue);
   }, [visible, initialValue]);
 
-  const styles = useStyles();
-
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel="Bezárás" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t("common.close")} />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.kav}
@@ -57,9 +59,9 @@ export function InputModal({
               onSubmitEditing={() => value.trim() && onConfirm(value.trim())}
             />
             <View style={styles.row}>
-              <Button title="Mégse" variant="secondary" style={{ flex: 1 }} onPress={onCancel} />
+              <Button title={t("common.cancel")} variant="secondary" style={{ flex: 1 }} onPress={onCancel} />
               <Button
-                title={confirmLabel}
+                title={confirm}
                 style={{ flex: 1 }}
                 onPress={() => value.trim() && onConfirm(value.trim())}
               />

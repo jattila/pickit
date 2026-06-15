@@ -20,6 +20,7 @@ import { EditIconButton } from "../../src/components/EditIconButton";
 import { CatalogEditModal } from "../../src/components/CatalogEditModal";
 import { colors, spacing, radius } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
+import { useTranslation } from "../../src/context/LocaleContext";
 
 export default function CatalogScreen() {
   const { profile } = useAuth();
@@ -27,6 +28,7 @@ export default function CatalogScreen() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const { t } = useTranslation();
   const styles = useStyles();
 
   useEffect(() => {
@@ -41,10 +43,10 @@ export default function CatalogScreen() {
   }, [catalog, search]);
 
   const remove = (item: CatalogItem) => {
-    Alert.alert(item.name, "Törlöd a korábbi tételek közül?", [
-      { text: "Mégse", style: "cancel" },
+    Alert.alert(item.name, t("catalog.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Törlés",
+        text: t("common.delete"),
         style: "destructive",
         onPress: () => householdId && deleteCatalogItem(householdId, item.id),
       },
@@ -60,15 +62,13 @@ export default function CatalogScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.h1}>Korábbi tételek</Text>
-        <Text style={styles.sub}>
-          A listáidhoz hozzáadott tételek itt gyűlnek, hogy gyorsan újra válogathass belőlük.
-        </Text>
+        <Text style={styles.h1}>{t("catalog.title")}</Text>
+        <Text style={styles.sub}>{t("catalog.subtitle")}</Text>
       </View>
 
       <TextInput
         style={styles.search}
-        placeholder="Keresés…"
+        placeholder={t("catalog.searchPlaceholder")}
         placeholderTextColor={colors.textMuted}
         value={search}
         onChangeText={setSearch}
@@ -80,11 +80,9 @@ export default function CatalogScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <EmptyState
-            title={catalog.length === 0 ? "Üres a katalógus" : "Nincs találat"}
+            title={catalog.length === 0 ? t("catalog.emptyTitle") : t("catalog.noResults")}
             subtitle={
-              catalog.length === 0
-                ? "Adj tételeket a bevásárlólistáidhoz, és automatikusan ide kerülnek."
-                : undefined
+              catalog.length === 0 ? t("catalog.emptySubtitle") : undefined
             }
           />
         }

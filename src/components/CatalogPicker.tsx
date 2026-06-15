@@ -22,6 +22,7 @@ import { CatalogEditModal } from "./CatalogEditModal";
 import { formatItemNameInput, itemNameKey, normalizeItemName } from "../lib/itemName";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
+import { useTranslation } from "../context/LocaleContext";
 
 interface Props {
   visible: boolean;
@@ -47,6 +48,7 @@ export function CatalogPicker({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const { t } = useTranslation();
   const styles = useStyles();
 
   useEffect(() => {
@@ -77,14 +79,11 @@ export function CatalogPicker({
     const name = normalizeItemName(search.trim());
     if (!name) return;
     if (checkedNames.includes(itemNameKey(name))) {
-      Alert.alert(
-        "Már megvan",
-        "Ez a tétel már be van jelölve a listán – valaki már megvette."
-      );
+      Alert.alert(t("listDetail.alreadyBoughtTitle"), t("listDetail.alreadyBoughtBody"));
       return;
     }
     if (existingNames.includes(itemNameKey(name))) {
-      Alert.alert("Már a listán van", "Ez a tétel már szerepel a listán.");
+      Alert.alert(t("catalog.alreadyOnListTitle"), t("catalog.alreadyOnListBody"));
       return;
     }
     setSearch("");
@@ -113,15 +112,15 @@ export function CatalogPicker({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <Text style={styles.title}>Korábbi tételek</Text>
+          <Text style={styles.title}>{t("catalog.pickerTitle")}</Text>
           <Pressable onPress={onClose} hitSlop={12}>
-            <Text style={styles.close}>Kész</Text>
+            <Text style={styles.close}>{t("catalog.pickerDone")}</Text>
           </Pressable>
         </View>
 
         <TextInput
           style={styles.search}
-          placeholder="Keresés vagy új tétel…"
+          placeholder={t("catalog.pickerSearch")}
           placeholderTextColor={colors.textMuted}
           value={search}
           onChangeText={(text) => setSearch(formatItemNameInput(text))}
@@ -138,13 +137,11 @@ export function CatalogPicker({
             <EmptyState
               title={
                 catalog.length === 0
-                  ? "Még nincs korábbi tétel"
-                  : "Nincs találat"
+                  ? t("catalog.pickerEmptyTitle")
+                  : t("catalog.noResults")
               }
               subtitle={
-                catalog.length === 0
-                  ? "Amint hozzáadsz tételeket a listáidhoz, itt megjelennek, hogy legközelebb gyorsan válogathass belőlük."
-                  : undefined
+                catalog.length === 0 ? t("catalog.pickerEmptySubtitle") : undefined
               }
             />
           }
@@ -167,13 +164,13 @@ export function CatalogPicker({
         <View style={styles.footer}>
           {canQuickAdd ? (
             <Button
-              title={`„${search.trim()}" hozzáadása újként`}
+              title={t("catalog.pickerQuickAdd", { name: search.trim() })}
               variant="secondary"
               onPress={quickAdd}
             />
           ) : null}
           <Button
-            title={count > 0 ? `Hozzáadás (${count})` : "Válassz tételeket"}
+            title={count > 0 ? t("catalog.pickerAddCount", { count }) : t("catalog.pickerSelect")}
             onPress={confirm}
             disabled={count === 0}
           />
