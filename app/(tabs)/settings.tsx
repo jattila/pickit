@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   Pressable,
   Share,
@@ -16,6 +15,8 @@ import { leaveHousehold } from "../../src/lib/firestore";
 import { Card, Button } from "../../src/components/ui";
 import { LinkAccountModal } from "../../src/components/LinkAccountModal";
 import { humanizeAuthError } from "../../src/lib/authErrors";
+import { useFontScale } from "../../src/context/FontScaleContext";
+import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { colors, spacing, radius } from "../../src/theme";
 
 export default function SettingsScreen() {
@@ -35,6 +36,9 @@ export default function SettingsScreen() {
   } = useAuth();
   const router = useRouter();
   const [showLink, setShowLink] = useState(false);
+  const { label: fontScaleLabel, increase, decrease, canIncrease, canDecrease } =
+    useFontScale();
+  const styles = useStyles();
 
   if (profile && !profile.householdId) {
     return <Redirect href="/setup" />;
@@ -179,6 +183,30 @@ export default function SettingsScreen() {
         </Card>
 
         <Card style={{ gap: spacing.sm }}>
+          <Text style={styles.label}>Betűméret</Text>
+          <View style={styles.fontScaleRow}>
+            <Pressable
+              onPress={decrease}
+              disabled={!canDecrease}
+              style={[styles.fontScaleBtn, !canDecrease && styles.fontScaleBtnDisabled]}
+            >
+              <Text style={styles.fontScaleBtnText}>A−</Text>
+            </Pressable>
+            <Text style={styles.fontScaleValue}>{fontScaleLabel}</Text>
+            <Pressable
+              onPress={increase}
+              disabled={!canIncrease}
+              style={[styles.fontScaleBtn, !canIncrease && styles.fontScaleBtnDisabled]}
+            >
+              <Text style={styles.fontScaleBtnText}>A+</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.note}>
+            A beállítás csak neked vonatkozik, és minden eszközön szinkronban marad.
+          </Text>
+        </Card>
+
+        <Card style={{ gap: spacing.sm }}>
           <Text style={styles.label}>Család</Text>
           <Text style={styles.value}>{household?.name}</Text>
 
@@ -246,42 +274,72 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 140 },
-  h1: { fontSize: 28, fontWeight: "800", color: colors.text, marginBottom: spacing.xs },
-  label: { fontSize: 13, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },
-  value: { fontSize: 18, fontWeight: "700", color: colors.text },
-  email: { fontSize: 15, color: colors.text },
-  note: { fontSize: 13, color: colors.textMuted, lineHeight: 19, flex: 1 },
-  errorNote: { fontSize: 13, color: colors.danger, lineHeight: 19 },
-  statusRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
-  btnRow: { flexDirection: "row", gap: spacing.sm },
-  codeBox: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-  },
-  code: { fontSize: 30, fontWeight: "800", color: colors.primaryDark, letterSpacing: 4 },
-  copyHint: { fontSize: 12, color: colors.primary, marginTop: 2 },
-  codeBoxLocked: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-  },
-  codeLocked: { fontSize: 28, fontWeight: "800", color: colors.checked, letterSpacing: 6 },
-  member: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: colors.white, fontWeight: "800", fontSize: 16 },
-  memberName: { fontSize: 16, color: colors.text, fontWeight: "500" },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 140 },
+    h1: { fontSize: fs(28), fontWeight: "800", color: colors.text, marginBottom: spacing.xs },
+    label: {
+      fontSize: fs(13),
+      fontWeight: "700",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    value: { fontSize: fs(18), fontWeight: "700", color: colors.text },
+    email: { fontSize: fs(15), color: colors.text },
+    note: { fontSize: fs(13), color: colors.textMuted, lineHeight: fs(19), flex: 1 },
+    errorNote: { fontSize: fs(13), color: colors.danger, lineHeight: fs(19) },
+    statusRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+    dot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
+    btnRow: { flexDirection: "row", gap: spacing.sm },
+    fontScaleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.lg,
+    },
+    fontScaleBtn: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.md,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    fontScaleBtnDisabled: { opacity: 0.35 },
+    fontScaleBtnText: { fontSize: fs(20), fontWeight: "800", color: colors.text },
+    fontScaleValue: {
+      fontSize: fs(16),
+      fontWeight: "700",
+      color: colors.text,
+      minWidth: 120,
+      textAlign: "center",
+    },
+    codeBox: {
+      backgroundColor: colors.primarySoft,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+    },
+    code: { fontSize: fs(30), fontWeight: "800", color: colors.primaryDark, letterSpacing: 4 },
+    copyHint: { fontSize: fs(12), color: colors.primary, marginTop: 2 },
+    codeBoxLocked: {
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+    },
+    codeLocked: { fontSize: fs(28), fontWeight: "800", color: colors.checked, letterSpacing: 6 },
+    member: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarText: { color: colors.white, fontWeight: "800", fontSize: fs(16) },
+    memberName: { fontSize: fs(16), color: colors.text, fontWeight: "500" },
+  }));
+}

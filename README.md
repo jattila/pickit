@@ -68,6 +68,43 @@ Ezután:
 - Olvasd be a QR-kódot az **Expo Go** appal (telefon), vagy
 - nyomj `i`-t iOS szimulátorhoz, `a`-t Android emulátorhoz.
 
+### Távolról tesztelés (tunnel)
+
+Az Expo beépített `npm run start:tunnel` módja az **exp.direct** ngrokot használja,
+10 másodperces timeouttal – gyakran elbukik (`took too long to connect`).
+
+**Ajánlott: saját ngrok fiók** (ingyenes, megbízhatóbb):
+
+1. Regisztráció: [ngrok.com](https://ngrok.com) → **Your Authtoken**
+2. Add hozzá a `.env`-hez: `NGROK_AUTHTOKEN=...`
+3. Indítsd:
+
+```bash
+npm run start:remote
+```
+
+Ez a saját tokendeddel nyit tunnel-t (EU régió), majd elindítja az Expo dev
+servert a megfelelő hostnévvel. Olvasd be a QR-kódot Expo Go-val – működik
+mobilnetről / más Wi‑Fi-ről is.
+
+**Még stabilabb: [Tailscale](https://tailscale.com)** (virtuális LAN)
+
+Telepítsd Macre és telefonra → mindkét eszköz ugyanazon a „hálózaton” van →
+`npm start` (LAN mód), tunnel nélkül. Nincs ngrok limit, nincs timeout.
+
+**Ha mégis az Expo tunnel kell:**
+
+```bash
+npm run start:tunnel
+```
+
+Kapcsold ki a VPN-t, jelentkezz be: `npx expo login`. Ha ismét timeout, használd
+a `start:remote`-ot.
+
+### Tunnel hiba (`ngrok tunnel took too long`) – régi megjegyzés
+
+Lásd fent: **`npm run start:remote`** vagy **Tailscale**.
+
 ## Használat
 
 1. **Gyors kezdés**: add meg a neved → indulhat (vendég fiók), vagy regisztrálj
@@ -186,6 +223,46 @@ eas submit -p ios --latest
 
 Store-fiókok: **Apple Developer Program** (99 USD/év) és **Google Play Console**
 (25 USD egyszeri).
+
+## Sentry (hibak- és crash-követés)
+
+A `@sentry/react-native` be van kötve. A DSN a `.env` fájlban (`EXPO_PUBLIC_SENTRY_DSN`).
+
+### Helyi fejlesztés
+
+1. Másold a `.env.example`-t `.env`-re (ha még nincs), és add meg a DSN-t a Sentry
+   projektből (Settings → Client Keys → DSN).
+2. **Indítsd újra** a fejlesztői szervert (`npm start`).
+3. Expo Go-ban a natív crash-ek nem mindig jelennek meg; a teljes kép **EAS build**
+   után érdemes tesztelni.
+
+### EAS build (source map + olvasható stack trace)
+
+A natív buildhez a Sentry plugin a **szervező slug**-okat várja (`SENTRY_ORG`,
+`SENTRY_PROJECT`). Ezeket a Sentry.io → Settings → Projects alatt találod.
+
+```bash
+# Auth token (Organization Settings → Auth Tokens) – titkos, ne commitold!
+eas secret:create --name SENTRY_AUTH_TOKEN --value "sntrys_..." --type string
+
+# Org és projekt slug (minden build környezethez, ahol kell):
+eas env:create --name SENTRY_ORG --value "a-szervezo-slugod" --environment production
+eas env:create --name SENTRY_PROJECT --value "pickit" --environment production
+eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value "https://..." --environment production --visibility plaintext
+
+# Ugyanez a preview környezethez is.
+```
+
+Ezután az EAS build feltölti a source mapokat, és a production crash-ek olvasható
+stack trace-sel érkeznek a Sentry dashboardra.
+
+### Manuális hiba jelentés kódból
+
+```typescript
+import { Sentry } from "../src/sentry/sentry";
+
+Sentry.captureException(error);
+```
 
 ## App Check (b) pont – még hátravan)
 

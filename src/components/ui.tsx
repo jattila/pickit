@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Text,
   TextProps,
@@ -11,9 +11,79 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { useFontScale } from "../context/FontScaleContext";
 import { colors, radius, spacing, shadow } from "../theme";
 
+function useUiStyles() {
+  const { scale: fs } = useFontScale();
+  return useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          padding: spacing.lg,
+          ...shadow.card,
+        },
+        btn: {
+          height: 52,
+          borderRadius: radius.md,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: spacing.lg,
+        },
+        btnPrimary: { backgroundColor: colors.primary },
+        btnSecondary: { backgroundColor: colors.surfaceAlt },
+        btnGhost: { backgroundColor: "transparent" },
+        btnDanger: { backgroundColor: colors.danger },
+        btnDisabled: { opacity: 0.5 },
+        btnPressed: { opacity: 0.85 },
+        btnText: { color: colors.white, fontSize: fs(16), fontWeight: "700" },
+        btnTextDark: { color: colors.text },
+        input: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: radius.md,
+          paddingHorizontal: spacing.lg,
+          height: 52,
+          fontSize: fs(16),
+          color: colors.text,
+        },
+        title: { fontSize: fs(26), fontWeight: "800", color: colors.text },
+        subtitle: { fontSize: fs(15), color: colors.textMuted, lineHeight: fs(21) },
+        progressTrack: {
+          height: 8,
+          borderRadius: radius.pill,
+          backgroundColor: colors.surfaceAlt,
+          overflow: "hidden",
+        },
+        progressFill: {
+          height: 8,
+          borderRadius: radius.pill,
+          backgroundColor: colors.primary,
+        },
+        empty: {
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: spacing.xxl,
+          paddingHorizontal: spacing.lg,
+          gap: spacing.sm,
+        },
+        emptyTitle: { fontSize: fs(17), fontWeight: "700", color: colors.text },
+        emptySub: {
+          fontSize: fs(14),
+          color: colors.textMuted,
+          textAlign: "center",
+          lineHeight: fs(20),
+        },
+      }),
+    [fs]
+  );
+}
+
 export function Card({ style, ...rest }: ViewProps) {
+  const styles = useUiStyles();
   return <View style={[styles.card, style]} {...rest} />;
 }
 
@@ -31,6 +101,7 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
+  const styles = useUiStyles();
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -64,6 +135,7 @@ export function Button({
 }
 
 export function Input(props: TextInputProps) {
+  const styles = useUiStyles();
   return (
     <TextInput
       placeholderTextColor={colors.textMuted}
@@ -74,14 +146,17 @@ export function Input(props: TextInputProps) {
 }
 
 export function Title({ style, ...rest }: TextProps) {
+  const styles = useUiStyles();
   return <Text style={[styles.title, style]} {...rest} />;
 }
 
 export function Subtitle({ style, ...rest }: TextProps) {
+  const styles = useUiStyles();
   return <Text style={[styles.subtitle, style]} {...rest} />;
 }
 
 export function ProgressBar({ value }: { value: number }) {
+  const styles = useUiStyles();
   const pct = Math.max(0, Math.min(1, value)) * 100;
   return (
     <View style={styles.progressTrack}>
@@ -97,6 +172,7 @@ export function EmptyState({
   title: string;
   subtitle?: string;
 }) {
+  const styles = useUiStyles();
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>{title}</Text>
@@ -104,64 +180,3 @@ export function EmptyState({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    ...shadow.card,
-  },
-  btn: {
-    height: 52,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  btnPrimary: { backgroundColor: colors.primary },
-  btnSecondary: { backgroundColor: colors.surfaceAlt },
-  btnGhost: { backgroundColor: "transparent" },
-  btnDanger: { backgroundColor: colors.danger },
-  btnDisabled: { opacity: 0.5 },
-  btnPressed: { opacity: 0.85 },
-  btnText: { color: colors.white, fontSize: 16, fontWeight: "700" },
-  btnTextDark: { color: colors.text },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    height: 52,
-    fontSize: 16,
-    color: colors.text,
-  },
-  title: { fontSize: 26, fontWeight: "800", color: colors.text },
-  subtitle: { fontSize: 15, color: colors.textMuted, lineHeight: 21 },
-  progressTrack: {
-    height: 8,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 8,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-  },
-  empty: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-  },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  emptySub: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-});

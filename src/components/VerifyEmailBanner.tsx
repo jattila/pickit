@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import { humanizeAuthError } from "../lib/authErrors";
 import { colors, spacing, radius } from "../theme";
+import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
 /**
  * Emlékeztető sáv a meg nem erősített e-mailes fiókoknak.
@@ -16,6 +17,7 @@ export function VerifyEmailBanner() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const styles = useStyles();
 
   if (!requiresVerification || dismissed) return null;
 
@@ -64,22 +66,24 @@ export function VerifyEmailBanner() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: "#FDEBD3",
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  emoji: { fontSize: 22 },
-  title: { fontSize: 14, fontWeight: "700", color: "#8A5A1A" },
-  sub: { fontSize: 12.5, color: "#8A5A1A", lineHeight: 17, marginTop: 1 },
-  actions: { alignItems: "flex-end", gap: spacing.xs },
-  action: { fontSize: 13, fontWeight: "700", color: colors.primaryDark },
-  dismiss: { fontSize: 14, color: "#8A5A1A", paddingTop: 2 },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    banner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: "#FDEBD3",
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    emoji: { fontSize: fs(22) },
+    title: { fontSize: fs(14), fontWeight: "700", color: "#8A5A1A" },
+    sub: { fontSize: fs(12.5), color: "#8A5A1A", lineHeight: fs(17), marginTop: 1 },
+    actions: { alignItems: "flex-end", gap: spacing.xs },
+    action: { fontSize: fs(13), fontWeight: "700", color: colors.primaryDark },
+    dismiss: { fontSize: fs(14), color: "#8A5A1A", paddingTop: 2 },
+  }));
+}

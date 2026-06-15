@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   Pressable,
   TextInput,
@@ -20,6 +19,7 @@ import { EmptyState } from "../../src/components/ui";
 import { EditIconButton } from "../../src/components/EditIconButton";
 import { CatalogEditModal } from "../../src/components/CatalogEditModal";
 import { colors, spacing, radius } from "../../src/theme";
+import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 
 export default function CatalogScreen() {
   const { profile } = useAuth();
@@ -27,6 +27,7 @@ export default function CatalogScreen() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const styles = useStyles();
 
   useEffect(() => {
     if (!householdId) return;
@@ -97,7 +98,6 @@ export default function CatalogScreen() {
                 <Text style={styles.cat}>{item.category}</Text>
               ) : null}
             </View>
-            <Text style={styles.use}>{item.useCount}×</Text>
             <EditIconButton onPress={() => setEditingItem(item)} />
             <Pressable onPress={() => remove(item)} hitSlop={10} style={styles.del}>
               <Text style={styles.delText}>✕</Text>
@@ -116,35 +116,36 @@ export default function CatalogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  h1: { fontSize: 28, fontWeight: "800", color: colors.text },
-  sub: { fontSize: 14, color: colors.textMuted, marginTop: 4, lineHeight: 20 },
-  search: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    height: 48,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 40 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  name: { fontSize: 16, color: colors.text, fontWeight: "500" },
-  cat: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  use: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
-  del: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
-  delText: { fontSize: 16, color: colors.textMuted },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    header: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
+    h1: { fontSize: fs(28), fontWeight: "800", color: colors.text },
+    sub: { fontSize: fs(14), color: colors.textMuted, marginTop: 4, lineHeight: fs(20) },
+    search: {
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.md,
+      height: 48,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      fontSize: fs(16),
+      color: colors.text,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 40 },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    name: { fontSize: fs(16), color: colors.text, fontWeight: "500" },
+    cat: { fontSize: fs(12), color: colors.textMuted, marginTop: 2 },
+    del: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
+    delText: { fontSize: fs(16), color: colors.textMuted },
+  }));
+}

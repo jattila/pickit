@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +13,7 @@ import { useAuth } from "../src/context/AuthContext";
 import { Button, Input, Title, Subtitle, Card } from "../src/components/ui";
 import { createHousehold, joinHousehold } from "../src/lib/firestore";
 import { colors, spacing, radius } from "../src/theme";
+import { useScaledStyleSheet } from "../src/theme/useScaledStyleSheet";
 
 type Mode = "create" | "join";
 
@@ -25,6 +25,7 @@ export default function Setup() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const styles = useStyles();
 
   const submit = async () => {
     if (!user) return;
@@ -139,22 +140,24 @@ export default function Setup() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.xl, flexGrow: 1, justifyContent: "center" },
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    padding: 4,
-    marginBottom: spacing.lg,
-  },
-  tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: "center" },
-  tabActive: { backgroundColor: colors.surface },
-  tabText: { fontSize: 14, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.text },
-  label: { fontSize: 14, fontWeight: "600", color: colors.text },
-  hint: { fontSize: 13, color: colors.textMuted, lineHeight: 19 },
-  warn: { fontSize: 13, color: "#8A5A1A", lineHeight: 19, fontWeight: "600" },
-  error: { color: colors.danger, fontSize: 14 },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.xl, flexGrow: 1, justifyContent: "center" },
+    tabs: {
+      flexDirection: "row",
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      padding: 4,
+      marginBottom: spacing.lg,
+    },
+    tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: "center" },
+    tabActive: { backgroundColor: colors.surface },
+    tabText: { fontSize: fs(14), fontWeight: "600", color: colors.textMuted },
+    tabTextActive: { color: colors.text },
+    label: { fontSize: fs(14), fontWeight: "600", color: colors.text },
+    hint: { fontSize: fs(13), color: colors.textMuted, lineHeight: fs(19) },
+    warn: { fontSize: fs(13), color: "#8A5A1A", lineHeight: fs(19), fontWeight: "600" },
+    error: { color: colors.danger, fontSize: fs(14) },
+  }));
+}

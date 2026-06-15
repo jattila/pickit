@@ -12,6 +12,7 @@ import { Button, Input } from "./ui";
 import { useAuth } from "../context/AuthContext";
 import { humanizeAuthError } from "../lib/authErrors";
 import { colors, spacing, radius } from "../theme";
+import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
 interface Props {
   visible: boolean;
@@ -58,6 +59,8 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
     }
   };
 
+  const styles = useStyles();
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -97,22 +100,24 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  kav: { width: "100%" },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  title: { fontSize: 20, fontWeight: "800", color: colors.text },
-  lead: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
-  error: { color: colors.danger, fontSize: 14 },
-  row: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xs },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.4)",
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    kav: { width: "100%" },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    title: { fontSize: fs(20), fontWeight: "800", color: colors.text },
+    lead: { fontSize: fs(14), color: colors.textMuted, lineHeight: fs(20) },
+    error: { color: colors.danger, fontSize: fs(14) },
+    row: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xs },
+  }));
+}

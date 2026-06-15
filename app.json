@@ -40,7 +40,13 @@
           "backgroundColor": "#2E7D5B"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "extra": {
       "router": {},

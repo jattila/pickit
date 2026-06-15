@@ -23,12 +23,20 @@ service cloud.firestore {
       return v is string && v.size() >= minLen && v.size() <= maxLen;
     }
 
+    function fontScaleOk(data) {
+      return !('fontScaleLevel' in data)
+        || (data.fontScaleLevel is int
+            && data.fontScaleLevel >= -3
+            && data.fontScaleLevel <= 3);
+    }
+
     // Felhasználói profil: mindenki csak a sajátját éri el.
     match /users/{userId} {
       allow read: if signedIn() && request.auth.uid == userId;
       allow create, update: if signedIn()
         && request.auth.uid == userId
-        && strLen(request.resource.data.displayName, 1, 100);
+        && strLen(request.resource.data.displayName, 1, 100)
+        && fontScaleOk(request.resource.data);
       allow delete: if false;
     }
 

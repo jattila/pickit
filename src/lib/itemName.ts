@@ -5,6 +5,11 @@ export function normalizeItemName(name: string): string {
   return trimmed.charAt(0).toLocaleLowerCase("hu") + trimmed.slice(1);
 }
 
+/** Összehasonlításhoz: normalizált név kisbetűsen. */
+export function itemNameKey(name: string): string {
+  return normalizeItemName(name).toLowerCase();
+}
+
 /** Beíráskor a kezdő karakter kisbetűsítése. */
 export function formatItemNameInput(text: string): string {
   if (!text) return text;

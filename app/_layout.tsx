@@ -5,9 +5,11 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import { FontScaleProvider } from "../src/context/FontScaleContext";
 import { NetworkProvider } from "../src/context/NetworkContext";
 import { NotConfigured } from "../src/components/NotConfigured";
 import { OfflineBanner } from "../src/components/OfflineBanner";
+import { Sentry } from "../src/config/sentry";
 import { colors } from "../src/theme";
 
 function RootNavigator() {
@@ -41,20 +43,24 @@ function RootNavigator() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <NetworkProvider>
           <AuthProvider>
-            <StatusBar style="dark" />
-            <RootNavigator />
+            <FontScaleProvider>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </FontScaleProvider>
           </AuthProvider>
         </NetworkProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 const styles = StyleSheet.create({
   root: {

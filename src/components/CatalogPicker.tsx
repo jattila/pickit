@@ -3,10 +3,10 @@ import {
   Modal,
   View,
   Text,
-  StyleSheet,
   FlatList,
   Pressable,
   TextInput,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -19,8 +19,9 @@ import { CatalogItem } from "../types";
 import { Button, EmptyState } from "./ui";
 import { EditIconButton } from "./EditIconButton";
 import { CatalogEditModal } from "./CatalogEditModal";
-import { formatItemNameInput } from "../lib/itemName";
+import { formatItemNameInput, itemNameKey, normalizeItemName } from "../lib/itemName";
 import { colors, spacing, radius } from "../theme";
+import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
 interface Props {
   visible: boolean;
@@ -28,6 +29,8 @@ interface Props {
   listId: string;
   uid: string;
   existingNames: string[];
+  /** Bejelölt tételek nevei – gyors hozzáadásnál külön üzenethez. */
+  checkedNames: string[];
   onClose: () => void;
 }
 
@@ -37,12 +40,14 @@ export function CatalogPicker({
   listId,
   uid,
   existingNames,
+  checkedNames,
   onClose,
 }: Props) {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const styles = useStyles();
 
   useEffect(() => {
     if (!visible || !householdId) return;
@@ -56,9 +61,35 @@ export function CatalogPicker({
     const q = search.trim().toLowerCase();
     const onList = new Set(existingNames);
     return catalog
-      .filter((c) => !onList.has(c.name.toLowerCase()))
-      .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
+      .filter((c) => !onList.has(itemNameKey(c.name)))
+      .filter((c) => (q ? itemNameKey(c.name).includes(q) : true));
   }, [catalog, search, existingNames]);
+
+  const searchKey = itemNameKey(search);
+
+  const canQuickAdd =
+    search.trim().length > 0 &&
+    !existingNames.includes(searchKey) &&
+    !filtered.some((c) => itemNameKey(c.name) === searchKey);
+
+  const quickAdd = async () => {
+    if (!householdId) return;
+    const name = normalizeItemName(search.trim());
+    if (!name) return;
+    if (checkedNames.includes(itemNameKey(name))) {
+      Alert.alert(
+        "Már megvan",
+        "Ez a tétel már be van jelölve a listán – valaki már megvette."
+      );
+      return;
+    }
+    if (existingNames.includes(itemNameKey(name))) {
+      Alert.alert("Már a listán van", "Ez a tétel már szerepel a listán.");
+      return;
+    }
+    setSearch("");
+    await addItem(householdId, listId, uid, { name });
+  };
 
   const selectedItems = catalog.filter((c) => selected[c.id]);
   const count = selectedItems.length;
@@ -70,17 +101,6 @@ export function CatalogPicker({
     if (!householdId || count === 0) return;
     await addItemsFromCatalog(householdId, listId, uid, selectedItems);
     onClose();
-  };
-
-  const canQuickAdd =
-    search.trim().length > 0 &&
-    !filtered.some((c) => c.name.toLowerCase() === search.trim().toLowerCase());
-
-  const quickAdd = async () => {
-    if (!householdId) return;
-    const name = search.trim();
-    setSearch("");
-    await addItem(householdId, listId, uid, { name });
   };
 
   const saveEdit = async (data: { name: string; defaultQuantity: string }) => {
@@ -137,9 +157,6 @@ export function CatalogPicker({
                     {isSel && <Text style={styles.checkmark}>✓</Text>}
                   </View>
                   <Text style={styles.rowName}>{item.name}</Text>
-                  {item.useCount > 1 ? (
-                    <Text style={styles.useCount}>{item.useCount}×</Text>
-                  ) : null}
                 </Pressable>
                 <EditIconButton onPress={() => setEditingItem(item)} />
               </View>
@@ -173,65 +190,66 @@ export function CatalogPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: spacing.lg,
-  },
-  title: { fontSize: 20, fontWeight: "800", color: colors.text },
-  close: { fontSize: 16, fontWeight: "700", color: colors.primary },
-  search: {
-    marginHorizontal: spacing.lg,
-    height: 48,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  listContent: { padding: spacing.lg, gap: spacing.sm },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingRight: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  rowMain: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    padding: spacing.md,
-    paddingRight: 0,
-  },
-  rowSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkmark: { color: colors.white, fontSize: 14, fontWeight: "900" },
-  rowName: { flex: 1, fontSize: 16, color: colors.text, fontWeight: "500" },
-  useCount: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
-  footer: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.lg,
+    },
+    title: { fontSize: fs(20), fontWeight: "800", color: colors.text },
+    close: { fontSize: fs(16), fontWeight: "700", color: colors.primary },
+    search: {
+      marginHorizontal: spacing.lg,
+      height: 48,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      fontSize: fs(16),
+      color: colors.text,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    listContent: { padding: spacing.lg, gap: spacing.sm },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingRight: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    rowMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      padding: spacing.md,
+      paddingRight: 0,
+    },
+    rowSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+    checkmark: { color: colors.white, fontSize: fs(14), fontWeight: "900" },
+    rowName: { flex: 1, fontSize: fs(16), color: colors.text, fontWeight: "500" },
+    footer: {
+      padding: spacing.lg,
+      gap: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+  }));
+}

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   Pressable,
   ActivityIndicator,
@@ -19,12 +18,14 @@ import { Card, ProgressBar, EmptyState } from "../../src/components/ui";
 import { InputModal } from "../../src/components/InputModal";
 import { VerifyEmailBanner } from "../../src/components/VerifyEmailBanner";
 import { colors, spacing, radius, shadow } from "../../src/theme";
+import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 
 export default function ListsScreen() {
   const { user, profile, household } = useAuth();
   const router = useRouter();
   const [lists, setLists] = useState<ShoppingList[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const styles = useStyles();
 
   const householdId = profile?.householdId ?? null;
 
@@ -101,6 +102,7 @@ export default function ListsScreen() {
 }
 
 function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void }) {
+  const styles = useStyles();
   const total = list.itemCount ?? 0;
   const done = list.checkedCount ?? 0;
   const progress = total > 0 ? done / total : 0;
@@ -130,43 +132,45 @@ function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void })
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  eyebrow: { fontSize: 13, fontWeight: "700", color: colors.primary, textTransform: "uppercase" },
-  h1: { fontSize: 28, fontWeight: "800", color: colors.text },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  listContent: { padding: spacing.lg, gap: spacing.md, paddingBottom: 120 },
-  row: { gap: spacing.sm },
-  rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowTitle: { fontSize: 17, fontWeight: "700", color: colors.text, flex: 1, marginRight: spacing.sm },
-  badge: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.textMuted,
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    overflow: "hidden",
-  },
-  badgeDone: { color: colors.white, backgroundColor: colors.primary },
-  rowMeta: { fontSize: 13, color: colors.textMuted },
-  fab: {
-    position: "absolute",
-    right: spacing.xl,
-    bottom: spacing.xl,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadow.card,
-  },
-  fabText: { color: colors.white, fontSize: 32, lineHeight: 36, fontWeight: "300" },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    header: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    eyebrow: { fontSize: fs(13), fontWeight: "700", color: colors.primary, textTransform: "uppercase" },
+    h1: { fontSize: fs(28), fontWeight: "800", color: colors.text },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    listContent: { padding: spacing.lg, gap: spacing.md, paddingBottom: 120 },
+    row: { gap: spacing.sm },
+    rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    rowTitle: { fontSize: fs(17), fontWeight: "700", color: colors.text, flex: 1, marginRight: spacing.sm },
+    badge: {
+      fontSize: fs(13),
+      fontWeight: "700",
+      color: colors.textMuted,
+      backgroundColor: colors.surfaceAlt,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      overflow: "hidden",
+    },
+    badgeDone: { color: colors.white, backgroundColor: colors.primary },
+    rowMeta: { fontSize: fs(13), color: colors.textMuted },
+    fab: {
+      position: "absolute",
+      right: spacing.xl,
+      bottom: spacing.xl,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      ...shadow.card,
+    },
+    fabText: { color: colors.white, fontSize: fs(32), lineHeight: fs(36), fontWeight: "300" },
+  }));
+}

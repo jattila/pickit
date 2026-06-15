@@ -12,6 +12,7 @@ import { Button, Input } from "./ui";
 import { CatalogItem } from "../types";
 import { formatItemNameInput } from "../lib/itemName";
 import { colors, spacing, radius } from "../theme";
+import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
 interface Props {
   visible: boolean;
@@ -36,6 +37,8 @@ export function CatalogEditModal({ visible, item, onCancel, onSave }: Props) {
     if (!trimmed) return;
     onSave({ name: trimmed, defaultQuantity: quantity.trim() });
   };
+
+  const styles = useStyles();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -79,20 +82,22 @@ export function CatalogEditModal({ visible, item, onCancel, onSave }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  kav: { width: "100%" },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  row: { flexDirection: "row", gap: spacing.md },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.4)",
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    kav: { width: "100%" },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    title: { fontSize: fs(18), fontWeight: "700", color: colors.text },
+    row: { flexDirection: "row", gap: spacing.md },
+  }));
+}

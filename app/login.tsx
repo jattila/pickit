@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +15,7 @@ import { Button, Input, Title, Subtitle } from "../src/components/ui";
 import { InputModal } from "../src/components/InputModal";
 import { humanizeAuthError } from "../src/lib/authErrors";
 import { colors, spacing, radius } from "../src/theme";
+import { useScaledStyleSheet } from "../src/theme/useScaledStyleSheet";
 
 type Mode = "quick" | "signin" | "signup";
 
@@ -30,6 +30,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [showReset, setShowReset] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+  const styles = useStyles();
 
   if (user) {
     return <Redirect href="/" />;
@@ -177,6 +178,7 @@ function Tab({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -187,38 +189,40 @@ function Tab({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.xl, flexGrow: 1, justifyContent: "center" },
-  logoRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.sm },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: { fontSize: 28 },
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    padding: 4,
-    marginBottom: spacing.lg,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
-    alignItems: "center",
-  },
-  tabActive: { backgroundColor: colors.surface },
-  tabText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.text },
-  form: { gap: spacing.md },
-  error: { color: colors.danger, fontSize: 14 },
-  info: { color: colors.primary, fontSize: 14 },
-  link: { color: colors.primary, fontSize: 14, fontWeight: "600" },
-  hint: { fontSize: 13, color: colors.textMuted, lineHeight: 19, textAlign: "center" },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.xl, flexGrow: 1, justifyContent: "center" },
+    logoRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.sm },
+    logo: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.lg,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoText: { fontSize: fs(28) },
+    tabs: {
+      flexDirection: "row",
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      padding: 4,
+      marginBottom: spacing.lg,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      alignItems: "center",
+    },
+    tabActive: { backgroundColor: colors.surface },
+    tabText: { fontSize: fs(13), fontWeight: "600", color: colors.textMuted },
+    tabTextActive: { color: colors.text },
+    form: { gap: spacing.md },
+    error: { color: colors.danger, fontSize: fs(14) },
+    info: { color: colors.primary, fontSize: fs(14) },
+    link: { color: colors.primary, fontSize: fs(14), fontWeight: "600" },
+    hint: { fontSize: fs(13), color: colors.textMuted, lineHeight: fs(19), textAlign: "center" },
+  }));
+}

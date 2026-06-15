@@ -1,7 +1,9 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { CatalogItem } from "../types";
+import { itemNameKey } from "../lib/itemName";
 import { colors, spacing } from "../theme";
+import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 
 interface Props {
   query: string;
@@ -18,10 +20,12 @@ export function CatalogSuggestions({ query, catalog, existingNames, onSelect }: 
     if (q.length < 1) return [];
     const onList = new Set(existingNames);
     return catalog
-      .filter((c) => !onList.has(c.name.toLowerCase()))
-      .filter((c) => c.name.toLowerCase().includes(q))
+      .filter((c) => !onList.has(itemNameKey(c.name)))
+      .filter((c) => itemNameKey(c.name).includes(q))
       .slice(0, MAX);
   }, [query, catalog, existingNames]);
+
+  const styles = useStyles();
 
   if (suggestions.length === 0) return null;
 
@@ -51,22 +55,24 @@ export function CatalogSuggestions({ query, catalog, existingNames, onSelect }: 
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    maxHeight: 132,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  rowPressed: { backgroundColor: colors.primarySoft },
-  name: { flex: 1, fontSize: 15, color: colors.text, fontWeight: "500" },
-  qty: { fontSize: 13, color: colors.textMuted, fontWeight: "600" },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    wrap: {
+      maxHeight: 132,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+    },
+    rowPressed: { backgroundColor: colors.primarySoft },
+    name: { flex: 1, fontSize: fs(15), color: colors.text, fontWeight: "500" },
+    qty: { fontSize: fs(13), color: colors.textMuted, fontWeight: "600" },
+  }));
+}

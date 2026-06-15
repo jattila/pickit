@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   Pressable,
   TextInput,
@@ -18,6 +17,7 @@ import { useKeyboardHeight } from "../../src/hooks/useKeyboardHeight";
 import {
   subscribeItems,
   subscribeCatalog,
+  subscribeList,
   addItem,
   toggleItem,
   updateItem,
@@ -25,15 +25,19 @@ import {
   clearCheckedItems,
   deleteList,
   setListArchived,
+  renameList,
 } from "../../src/lib/firestore";
-import { CatalogItem, ListItem } from "../../src/types";
+import { CatalogItem, ListItem, ShoppingList } from "../../src/types";
 import { EmptyState, ProgressBar } from "../../src/components/ui";
+import { InputModal } from "../../src/components/InputModal";
 import { CatalogPicker } from "../../src/components/CatalogPicker";
 import { CatalogSuggestions } from "../../src/components/CatalogSuggestions";
 import { ItemEditModal } from "../../src/components/ItemEditModal";
 import { EditIconButton } from "../../src/components/EditIconButton";
-import { formatItemNameInput } from "../../src/lib/itemName";
+import { formatItemNameInput, itemNameKey, normalizeItemName } from "../../src/lib/itemName";
+import { isAlreadyCheckedOnList } from "../../src/lib/listItems";
 import { colors, spacing, radius, shadow } from "../../src/theme";
+import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 
 export default function ListDetail() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -47,6 +51,8 @@ export default function ListDetail() {
   const [qty, setQty] = useState("");
   const [showCatalog, setShowCatalog] = useState(false);
   const [editingItem, setEditingItem] = useState<ListItem | null>(null);
+  const [listMeta, setListMeta] = useState<ShoppingList | null>(null);
+  const [showRename, setShowRename] = useState(false);
   const insets = useSafeAreaInsets();
   const bannerInset = useOfflineBannerInset();
   const keyboardHeight = useKeyboardHeight();
@@ -57,6 +63,7 @@ export default function ListDetail() {
   /** iOS: abszolút pozíció. Android: adjustResize / softwareKeyboardLayoutMode kezeli. */
   const addBarBottom = Platform.OS === "ios" ? keyboardHeight : 0;
   const listPadExtra = Platform.OS === "ios" ? keyboardHeight : 0;
+  const styles = useStyles();
 
   useEffect(() => {
     if (!householdId || !id) return;
@@ -65,13 +72,26 @@ export default function ListDetail() {
   }, [householdId, id]);
 
   useEffect(() => {
+    if (!householdId || !id) return;
+    const unsub = subscribeList(householdId, id, setListMeta);
+    return unsub;
+  }, [householdId, id]);
+
+  const listName = listMeta?.name ?? name ?? "Bevásárlólista";
+
+  useEffect(() => {
     if (!householdId) return;
     const unsub = subscribeCatalog(householdId, setCatalog);
     return unsub;
   }, [householdId]);
 
   const existingNames = useMemo(
-    () => (items ?? []).map((i) => i.name.toLowerCase()),
+    () => (items ?? []).map((i) => itemNameKey(i.name)),
+    [items]
+  );
+
+  const checkedNames = useMemo(
+    () => (items ?? []).filter((i) => i.checked).map((i) => itemNameKey(i.name)),
     [items]
   );
 
@@ -89,9 +109,16 @@ export default function ListDetail() {
 
   const handleAdd = async (nameOverride?: string, quantityOverride?: string) => {
     if (!householdId || !user) return;
-    const name = (nameOverride ?? draft).trim();
+    const name = normalizeItemName(nameOverride ?? draft);
     const quantity = (quantityOverride ?? qty).trim();
     if (!name) return;
+    if (isAlreadyCheckedOnList(name, items ?? [])) {
+      Alert.alert(
+        "Már megvan",
+        "Ez a tétel már be van jelölve a listán – valaki már megvette."
+      );
+      return;
+    }
     setDraft("");
     setQty("");
     await addItem(householdId, id, user.uid, { name, quantity });
@@ -140,8 +167,23 @@ export default function ListDetail() {
     );
   };
 
+  const handleRename = async (newName: string) => {
+    if (!householdId || !id) return;
+    setShowRename(false);
+    try {
+      await renameList(householdId, id, newName);
+      router.setParams({ name: newName });
+    } catch (err) {
+      Alert.alert(
+        "Átnevezés sikertelen",
+        err instanceof Error ? err.message : "Ismeretlen hiba történt."
+      );
+    }
+  };
+
   const openListMenu = () => {
-    Alert.alert(name || "Lista", undefined, [
+    Alert.alert(listName, undefined, [
+      { text: "Átnevezés", onPress: () => setShowRename(true) },
       {
         text: "Lista archiválása",
         onPress: () => householdId && setListArchived(householdId, id, true).then(() => router.back()),
@@ -172,7 +214,7 @@ export default function ListDetail() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.h1} numberOfLines={1}>
-              {name || "Bevásárlólista"}
+              {listName}
             </Text>
             <Text style={styles.sub}>
               {total === 0 ? "Üres" : `${done}/${total} megvan`}
@@ -297,6 +339,7 @@ export default function ListDetail() {
         listId={id}
         uid={user?.uid ?? ""}
         existingNames={existingNames}
+        checkedNames={checkedNames}
         onClose={() => setShowCatalog(false)}
       />
 
@@ -305,6 +348,15 @@ export default function ListDetail() {
         item={editingItem}
         onCancel={() => setEditingItem(null)}
         onSave={handleSaveEdit}
+      />
+
+      <InputModal
+        visible={showRename}
+        title="Lista átnevezése"
+        placeholder="Lista neve"
+        initialValue={listName}
+        onCancel={() => setShowRename(false)}
+        onConfirm={handleRename}
       />
     </View>
   );
@@ -321,6 +373,7 @@ function ItemRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.item}>
       <Pressable
@@ -352,117 +405,119 @@ function ItemRow({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-  },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 34, color: colors.text, lineHeight: 36 },
-  h1: { fontSize: 20, fontWeight: "800", color: colors.text },
-  sub: { fontSize: 13, color: colors.textMuted },
-  menuBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  menuText: { fontSize: 26, color: colors.text, fontWeight: "700" },
-  progressWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 24 },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingRight: spacing.sm,
-    gap: spacing.xs,
-    ...shadow.card,
-  },
-  itemMain: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: spacing.md,
-    paddingRight: 0,
-    gap: spacing.md,
-  },
-  checkbox: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkmark: { color: colors.white, fontSize: 15, fontWeight: "900" },
-  itemName: { fontSize: 16, color: colors.text, fontWeight: "500" },
-  itemNameChecked: { color: colors.checked, textDecorationLine: "line-through" },
-  itemQty: { color: colors.textMuted, fontWeight: "400" },
-  checkedBy: { fontSize: 12, color: colors.accent, marginTop: 2, fontWeight: "600" },
-  checkedSection: { marginTop: spacing.lg, gap: spacing.sm },
-  checkedHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.xs,
-  },
-  checkedTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted },
-  clearText: { fontSize: 14, color: colors.danger, fontWeight: "600" },
-  addBarWrap: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  addBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  catalogBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  catalogBtnText: { fontSize: 20 },
-  addInput: {
-    flex: 1,
-    height: 48,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    fontSize: 16,
-    color: colors.text,
-  },
-  qtyInput: {
-    width: 56,
-    height: 48,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    fontSize: 15,
-    color: colors.text,
-    textAlign: "center",
-  },
-  addBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtnDisabled: { opacity: 0.4 },
-  addBtnText: { color: colors.white, fontSize: 28, lineHeight: 30, fontWeight: "300" },
-});
+function useStyles() {
+  return useScaledStyleSheet((fs) => ({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    flex: { flex: 1 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.xs,
+    },
+    backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+    backText: { fontSize: fs(34), color: colors.text, lineHeight: fs(36) },
+    h1: { fontSize: fs(20), fontWeight: "800", color: colors.text },
+    sub: { fontSize: fs(13), color: colors.textMuted },
+    menuBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+    menuText: { fontSize: fs(26), color: colors.text, fontWeight: "700" },
+    progressWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 24 },
+    item: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingRight: spacing.sm,
+      gap: spacing.xs,
+      ...shadow.card,
+    },
+    itemMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      padding: spacing.md,
+      paddingRight: 0,
+      gap: spacing.md,
+    },
+    checkbox: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+    checkmark: { color: colors.white, fontSize: fs(15), fontWeight: "900" },
+    itemName: { fontSize: fs(16), color: colors.text, fontWeight: "500" },
+    itemNameChecked: { color: colors.checked, textDecorationLine: "line-through" },
+    itemQty: { color: colors.textMuted, fontWeight: "400" },
+    checkedBy: { fontSize: fs(12), color: colors.accent, marginTop: 2, fontWeight: "600" },
+    checkedSection: { marginTop: spacing.lg, gap: spacing.sm },
+    checkedHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.xs,
+    },
+    checkedTitle: { fontSize: fs(14), fontWeight: "700", color: colors.textMuted },
+    clearText: { fontSize: fs(14), color: colors.danger, fontWeight: "600" },
+    addBarWrap: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    addBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+    },
+    catalogBtn: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    catalogBtnText: { fontSize: fs(20) },
+    addInput: {
+      flex: 1,
+      height: 48,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      fontSize: fs(16),
+      color: colors.text,
+    },
+    qtyInput: {
+      width: 56,
+      height: 48,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.sm,
+      fontSize: fs(15),
+      color: colors.text,
+      textAlign: "center",
+    },
+    addBtn: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    addBtnDisabled: { opacity: 0.4 },
+    addBtnText: { color: colors.white, fontSize: fs(28), lineHeight: fs(30), fontWeight: "300" },
+  }));
+}
