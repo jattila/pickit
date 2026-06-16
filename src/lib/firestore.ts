@@ -313,21 +313,28 @@ function catalogKey(name: string): string {
     .slice(0, 80) || "item";
 }
 
+export function sortCatalogItems(items: CatalogItem[]): CatalogItem[] {
+  return [...items].sort((a, b) => {
+    const af = a.favorite ? 1 : 0;
+    const bf = b.favorite ? 1 : 0;
+    if (af !== bf) return bf - af;
+    return a.name.localeCompare(b.name, "hu", { sensitivity: "base" });
+  });
+}
+
 function catalogUpsertFields(data: {
   name: string;
   category?: string;
-  defaultQuantity?: string;
 }): Record<string, unknown> {
   const name = normalizeItemName(data.name);
   const payload: Record<string, unknown> = {
     name,
     useCount: increment(1),
     lastUsedAt: serverTimestamp(),
+    defaultQuantity: deleteField(),
   };
   const category = data.category?.trim();
-  const quantity = data.defaultQuantity?.trim();
   if (category) payload.category = category;
-  if (quantity) payload.defaultQuantity = quantity;
   return payload;
 }
 
@@ -380,7 +387,7 @@ export async function addItem(
   batch.update(doc(listsCol(householdId), listId), { itemCount: increment(1) });
   batch.set(
     doc(catalogCol(householdId), catalogKey(name)),
-    catalogUpsertFields({ name, category: input.category, defaultQuantity: input.quantity }),
+    catalogUpsertFields({ name, category: input.category }),
     { merge: true }
   );
   await batch.commit();
@@ -428,7 +435,6 @@ export async function updateItem(
 
   const syncCatalog =
     (data.name !== undefined && newName !== item.name) ||
-    (data.quantity !== undefined && newQuantity !== (item.quantity ?? "")) ||
     (data.category !== undefined && newCategory !== (item.category ?? ""));
 
   if (!syncCatalog) {
@@ -442,7 +448,7 @@ export async function updateItem(
 
   const catalogPayload: Record<string, unknown> = {
     name: newName,
-    defaultQuantity: newQuantity,
+    defaultQuantity: deleteField(),
   };
   if (newCategory) catalogPayload.category = newCategory;
 
@@ -502,11 +508,8 @@ export function subscribeCatalog(
         .map((d) => ({
           id: d.id,
           ...(d.data() as Omit<CatalogItem, "id">),
-        }))
-        .sort((a, b) =>
-          a.name.localeCompare(b.name, "hu", { sensitivity: "base" })
-        );
-      cb(items);
+        }));
+      cb(sortCatalogItems(items));
     },
     (err) => {
       console.warn("[PickIt] Katalógus betöltése sikertelen:", err.message);
@@ -517,7 +520,7 @@ export function subscribeCatalog(
 
 export async function upsertCatalogItem(
   householdId: ID,
-  data: { name: string; category?: string; defaultQuantity?: string }
+  data: { name: string; category?: string }
 ): Promise<void> {
   const name = normalizeItemName(data.name);
   if (!name) return;
@@ -535,20 +538,38 @@ export async function deleteCatalogItem(
   await deleteDoc(doc(catalogCol(householdId), catalogId));
 }
 
+export async function setCatalogFavorite(
+  householdId: ID,
+  name: string,
+  favorite: boolean
+): Promise<void> {
+  const normalized = normalizeItemName(name);
+  if (!normalized) return;
+  const ref = doc(catalogCol(householdId), catalogKey(normalized));
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, { favorite });
+    return;
+  }
+  await setDoc(ref, {
+    name: normalized,
+    favorite,
+    useCount: 0,
+  });
+}
+
 export async function updateCatalogItem(
   householdId: ID,
   item: CatalogItem,
-  data: { name: string; defaultQuantity?: string; category?: string }
+  data: { name: string; category?: string }
 ): Promise<void> {
   const name = normalizeItemName(data.name);
   if (!name) return;
 
   const newKey = catalogKey(name);
-  const payload = {
-    name,
-    defaultQuantity: (data.defaultQuantity ?? item.defaultQuantity ?? "").trim(),
-    category: (data.category ?? item.category ?? "").trim(),
-  };
+  const category = (data.category ?? item.category ?? "").trim();
+  const payload: Record<string, unknown> = { name };
+  if (category) payload.category = category;
 
   if (newKey === item.id) {
     await updateDoc(doc(catalogCol(householdId), item.id), payload);
@@ -560,6 +581,7 @@ export async function updateCatalogItem(
   batch.set(doc(catalogCol(householdId), newKey), {
     ...payload,
     useCount: item.useCount,
+    favorite: item.favorite === true,
     lastUsedAt: item.lastUsedAt ?? serverTimestamp(),
   });
   await batch.commit();
@@ -579,7 +601,7 @@ export async function addItemsFromCatalog(
     const itemRef = doc(itemsCol(householdId, listId));
     batch.set(itemRef, {
       name: c.name,
-      quantity: c.defaultQuantity || "",
+      quantity: "",
       category: c.category || "",
       note: "",
       checked: false,
@@ -594,6 +616,7 @@ export async function addItemsFromCatalog(
     batch.update(catRef, {
       useCount: increment(1),
       lastUsedAt: serverTimestamp(),
+      defaultQuantity: deleteField(),
     });
   });
   batch.update(doc(listsCol(householdId), listId), {

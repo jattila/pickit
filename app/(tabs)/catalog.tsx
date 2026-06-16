@@ -13,10 +13,12 @@ import {
   subscribeCatalog,
   deleteCatalogItem,
   updateCatalogItem,
+  setCatalogFavorite,
 } from "../../src/lib/firestore";
 import { CatalogItem } from "../../src/types";
 import { EmptyState } from "../../src/components/ui";
 import { EditIconButton } from "../../src/components/EditIconButton";
+import { FavoriteButton } from "../../src/components/FavoriteButton";
 import { CatalogEditModal } from "../../src/components/CatalogEditModal";
 import { colors, spacing, radius } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
@@ -54,10 +56,22 @@ export default function CatalogScreen() {
     ]);
   };
 
-  const saveEdit = async (data: { name: string; defaultQuantity: string }) => {
+  const saveEdit = async (data: { name: string }) => {
     if (!householdId || !editingItem) return;
-    await updateCatalogItem(householdId, editingItem, data);
-    setEditingItem(null);
+    try {
+      await updateCatalogItem(householdId, editingItem, data);
+      setEditingItem(null);
+    } catch (err) {
+      Alert.alert(
+        t("common.error"),
+        err instanceof Error ? err.message : t("common.unknownErrorOccurred")
+      );
+    }
+  };
+
+  const toggleFavorite = (item: CatalogItem) => {
+    if (!householdId) return;
+    void setCatalogFavorite(householdId, item.name, !item.favorite);
   };
 
   return (
@@ -89,12 +103,14 @@ export default function CatalogScreen() {
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.name}</Text>
-              {item.defaultQuantity ? (
-                <Text style={styles.cat}>{item.defaultQuantity}</Text>
-              ) : item.category ? (
+              {item.category ? (
                 <Text style={styles.cat}>{item.category}</Text>
               ) : null}
             </View>
+            <FavoriteButton
+              favorite={item.favorite === true}
+              onPress={() => toggleFavorite(item)}
+            />
             <EditIconButton onPress={() => setEditingItem(item)} />
             <Pressable onPress={() => remove(item)} hitSlop={10} style={styles.del}>
               <Text style={styles.delText}>✕</Text>

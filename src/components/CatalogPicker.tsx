@@ -14,12 +14,14 @@ import {
   addItemsFromCatalog,
   addItem,
   updateCatalogItem,
+  setCatalogFavorite,
 } from "../lib/firestore";
 import { CatalogItem } from "../types";
 import { Button, EmptyState } from "./ui";
 import { EditIconButton } from "./EditIconButton";
+import { FavoriteButton } from "./FavoriteButton";
 import { CatalogEditModal } from "./CatalogEditModal";
-import { formatItemNameInput, itemNameKey, normalizeItemName } from "../lib/itemName";
+import { formatItemNameInput, itemNameKey, resolveItemInput } from "../lib/itemName";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
 import { useTranslation } from "../context/LocaleContext";
@@ -76,7 +78,7 @@ export function CatalogPicker({
 
   const quickAdd = async () => {
     if (!householdId) return;
-    const name = normalizeItemName(search.trim());
+    const { name, quantity } = resolveItemInput(search.trim());
     if (!name) return;
     if (checkedNames.includes(itemNameKey(name))) {
       Alert.alert(t("listDetail.alreadyBoughtTitle"), t("listDetail.alreadyBoughtBody"));
@@ -87,7 +89,7 @@ export function CatalogPicker({
       return;
     }
     setSearch("");
-    await addItem(householdId, listId, uid, { name });
+    await addItem(householdId, listId, uid, { name, quantity });
   };
 
   const selectedItems = catalog.filter((c) => selected[c.id]);
@@ -102,10 +104,22 @@ export function CatalogPicker({
     onClose();
   };
 
-  const saveEdit = async (data: { name: string; defaultQuantity: string }) => {
+  const saveEdit = async (data: { name: string }) => {
     if (!householdId || !editingItem) return;
-    await updateCatalogItem(householdId, editingItem, data);
-    setEditingItem(null);
+    try {
+      await updateCatalogItem(householdId, editingItem, data);
+      setEditingItem(null);
+    } catch (err) {
+      Alert.alert(
+        t("common.error"),
+        err instanceof Error ? err.message : t("common.unknownErrorOccurred")
+      );
+    }
+  };
+
+  const toggleFavorite = (item: CatalogItem) => {
+    if (!householdId) return;
+    void setCatalogFavorite(householdId, item.name, !item.favorite);
   };
 
   return (
@@ -155,6 +169,10 @@ export function CatalogPicker({
                   </View>
                   <Text style={styles.rowName}>{item.name}</Text>
                 </Pressable>
+                <FavoriteButton
+                  favorite={item.favorite === true}
+                  onPress={() => toggleFavorite(item)}
+                />
                 <EditIconButton onPress={() => setEditingItem(item)} />
               </View>
             );

@@ -213,6 +213,10 @@ export const en: TranslationTree = {
     title: "Offline mode",
     sub: "Lists stay on your phone. They sync when you're back online.",
   },
+  favorite: {
+    add: "Add to favorites",
+    remove: "Remove from favorites",
+  },
   menu: {
     open: "Open menu",
     close: "Close menu",

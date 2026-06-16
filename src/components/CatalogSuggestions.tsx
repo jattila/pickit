@@ -45,9 +45,6 @@ export function CatalogSuggestions({ query, catalog, existingNames, onSelect }: 
             <Text style={styles.name} numberOfLines={1}>
               {item.name}
             </Text>
-            {item.defaultQuantity ? (
-              <Text style={styles.qty}>{item.defaultQuantity}</Text>
-            ) : null}
           </Pressable>
         ))}
       </ScrollView>
@@ -66,13 +63,10 @@ function useStyles() {
     row: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
-      gap: spacing.sm,
     },
     rowPressed: { backgroundColor: colors.primarySoft },
     name: { flex: 1, fontSize: fs(15), color: colors.text, fontWeight: "500" },
-    qty: { fontSize: fs(13), color: colors.textMuted, fontWeight: "600" },
   }));
 }

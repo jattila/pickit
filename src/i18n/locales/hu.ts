@@ -218,6 +218,10 @@ export const hu = {
     title: "Offline mód",
     sub: "A listák a telefonon maradnak. Szinkronizálás, amint van internet.",
   },
+  favorite: {
+    add: "Kedvencnek jelölés",
+    remove: "Kedvenc eltávolítása",
+  },
   menu: {
     open: "Menü megnyitása",
     close: "Menü bezárása",

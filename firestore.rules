@@ -35,6 +35,10 @@ service cloud.firestore {
             && data.fontScaleLevel <= 3);
     }
 
+    function favoriteOk(data) {
+      return !('favorite' in data) || data.favorite is bool;
+    }
+
     // Felhasználói profil: mindenki csak a sajátját éri el.
     match /users/{userId} {
       allow read: if signedIn() && request.auth.uid == userId;
@@ -132,7 +136,8 @@ service cloud.firestore {
         allow read: if isMemberOf(householdId);
         allow create, update: if isMemberOf(householdId)
           && strLen(request.resource.data.name, 1, 100)
-          && request.resource.data.useCount is number;
+          && request.resource.data.useCount is number
+          && favoriteOk(request.resource.data);
         allow delete: if isMemberOf(householdId);
       }
     }

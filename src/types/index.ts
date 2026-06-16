@@ -53,8 +53,9 @@ export interface CatalogItem {
   id: ID;
   name: string;
   category?: string;
-  defaultQuantity?: string;
   /** Hányszor használták – gyakoriság szerinti rendezéshez. */
   useCount: number;
+  /** Kedvenc tétel – a katalógusban előre kerül. */
+  favorite?: boolean;
   lastUsedAt?: Timestamp;
 }

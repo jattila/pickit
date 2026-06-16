@@ -26,6 +26,7 @@ import {
   deleteList,
   setListArchived,
   renameList,
+  setCatalogFavorite,
 } from "../../src/lib/firestore";
 import { CatalogItem, ListItem, ShoppingList } from "../../src/types";
 import { EmptyState, ProgressBar } from "../../src/components/ui";
@@ -34,8 +35,9 @@ import { CatalogPicker } from "../../src/components/CatalogPicker";
 import { CatalogSuggestions } from "../../src/components/CatalogSuggestions";
 import { ItemEditModal } from "../../src/components/ItemEditModal";
 import { EditIconButton } from "../../src/components/EditIconButton";
+import { FavoriteButton } from "../../src/components/FavoriteButton";
 import { HamburgerButton } from "../../src/components/HamburgerButton";
-import { formatItemNameInput, itemNameKey, normalizeItemName } from "../../src/lib/itemName";
+import { formatItemNameInput, itemNameKey, resolveItemInput } from "../../src/lib/itemName";
 import { isAlreadyCheckedOnList } from "../../src/lib/listItems";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
@@ -98,6 +100,20 @@ export default function ListDetail() {
     [items]
   );
 
+  const favoriteByName = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const c of catalog) {
+      map.set(itemNameKey(c.name), c.favorite === true);
+    }
+    return map;
+  }, [catalog]);
+
+  const handleToggleFavorite = (item: ListItem) => {
+    if (!householdId) return;
+    const key = itemNameKey(item.name);
+    void setCatalogFavorite(householdId, item.name, !favoriteByName.get(key));
+  };
+
   const { unchecked, checked } = useMemo(() => {
     const list = items ?? [];
     return {
@@ -112,8 +128,7 @@ export default function ListDetail() {
 
   const handleAdd = async (nameOverride?: string, quantityOverride?: string) => {
     if (!householdId || !user) return;
-    const name = normalizeItemName(nameOverride ?? draft);
-    const quantity = (quantityOverride ?? qty).trim();
+    const { name, quantity } = resolveItemInput(nameOverride ?? draft, quantityOverride ?? qty);
     if (!name) return;
     if (isAlreadyCheckedOnList(name, items ?? [])) {
       Alert.alert(t("listDetail.alreadyBoughtTitle"), t("listDetail.alreadyBoughtBody"));
@@ -125,7 +140,7 @@ export default function ListDetail() {
   };
 
   const handlePickSuggestion = (item: CatalogItem) => {
-    void handleAdd(item.name, item.defaultQuantity ?? "");
+    void handleAdd(item.name);
   };
 
   const handleToggle = (item: ListItem) => {
@@ -252,7 +267,9 @@ export default function ListDetail() {
             renderItem={({ item }) => (
               <ItemRow
                 item={item}
+                favorite={favoriteByName.get(itemNameKey(item.name)) === true}
                 onToggle={() => handleToggle(item)}
+                onToggleFavorite={() => handleToggleFavorite(item)}
                 onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item)}
               />
@@ -272,7 +289,9 @@ export default function ListDetail() {
                     <ItemRow
                       key={item.id}
                       item={item}
+                      favorite={favoriteByName.get(itemNameKey(item.name)) === true}
                       onToggle={() => handleToggle(item)}
+                      onToggleFavorite={() => handleToggleFavorite(item)}
                       onEdit={() => setEditingItem(item)}
                       onDelete={() => handleDelete(item)}
                     />
@@ -364,12 +383,16 @@ export default function ListDetail() {
 
 function ItemRow({
   item,
+  favorite,
   onToggle,
+  onToggleFavorite,
   onEdit,
   onDelete,
 }: {
   item: ListItem;
+  favorite: boolean;
   onToggle: () => void;
+  onToggleFavorite: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -403,6 +426,7 @@ function ItemRow({
           ) : null}
         </View>
       </Pressable>
+      <FavoriteButton favorite={favorite} onPress={onToggleFavorite} />
       <EditIconButton onPress={onEdit} />
     </View>
   );

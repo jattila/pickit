@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Button, Input } from "./ui";
 import { CatalogItem } from "../types";
-import { formatItemNameInput } from "../lib/itemName";
+import { formatItemNameInput, resolveItemInput } from "../lib/itemName";
 import { useTranslation } from "../context/LocaleContext";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
@@ -19,25 +19,23 @@ interface Props {
   visible: boolean;
   item: CatalogItem | null;
   onCancel: () => void;
-  onSave: (data: { name: string; defaultQuantity: string }) => void;
+  onSave: (data: { name: string }) => void;
 }
 
 export function CatalogEditModal({ visible, item, onCancel, onSave }: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
 
   useEffect(() => {
     if (visible && item) {
       setName(item.name);
-      setQuantity(item.defaultQuantity ?? "");
     }
   }, [visible, item]);
 
   const save = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onSave({ name: trimmed, defaultQuantity: quantity.trim() });
+    const { name: parsedName } = resolveItemInput(name);
+    if (!parsedName) return;
+    onSave({ name: parsedName });
   };
 
   const styles = useStyles();
@@ -45,28 +43,23 @@ export function CatalogEditModal({ visible, item, onCancel, onSave }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t("common.close")} />
+        <Pressable style={styles.backdropTap} onPress={onCancel} accessibilityLabel={t("common.close")} />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.kav}
+          pointerEvents="box-none"
         >
-          <View style={styles.sheet}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.title}>{t("catalog.editTitle")}</Text>
             <Input
               placeholder={t("catalog.namePlaceholder")}
               value={name}
               onChangeText={(text) => setName(formatItemNameInput(text))}
               autoFocus
-              returnKeyType="next"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Input
-              placeholder={t("catalog.defaultQtyPlaceholder")}
-              value={quantity}
-              onChangeText={setQuantity}
               returnKeyType="done"
               onSubmitEditing={save}
+              autoCapitalize="none"
+              autoCorrect={false}
             />
             <View style={styles.row}>
               <Button title={t("common.cancel")} variant="secondary" style={{ flex: 1 }} onPress={onCancel} />
@@ -77,7 +70,7 @@ export function CatalogEditModal({ visible, item, onCancel, onSave }: Props) {
                 onPress={save}
               />
             </View>
-          </View>
+          </Pressable>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -92,7 +85,11 @@ function useStyles() {
       justifyContent: "center",
       padding: spacing.xl,
     },
-    kav: { width: "100%" },
+    backdropTap: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 0,
+    },
+    kav: { width: "100%", zIndex: 1 },
     sheet: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,

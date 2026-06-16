@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Button, Input } from "./ui";
 import { ListItem } from "../types";
-import { formatItemNameInput } from "../lib/itemName";
+import { formatItemNameInput, resolveItemInput } from "../lib/itemName";
 import { useTranslation } from "../context/LocaleContext";
 import { colors, spacing, radius } from "../theme";
 import { useScaledStyleSheet } from "../theme/useScaledStyleSheet";
@@ -35,9 +35,9 @@ export function ItemEditModal({ visible, item, onCancel, onSave }: Props) {
   }, [visible, item]);
 
   const save = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onSave({ name: trimmed, quantity: quantity.trim() });
+    const resolved = resolveItemInput(name, quantity);
+    if (!resolved.name) return;
+    onSave(resolved);
   };
 
   const styles = useStyles();
