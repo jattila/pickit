@@ -13,6 +13,7 @@ import {
   subscribeCatalog,
   addItemsFromCatalog,
   addItem,
+  deleteCatalogItem,
   updateCatalogItem,
   setCatalogFavorite,
 } from "../lib/firestore";
@@ -122,6 +123,25 @@ export function CatalogPicker({
     void setCatalogFavorite(householdId, item.name, !item.favorite);
   };
 
+  const remove = (item: CatalogItem) => {
+    Alert.alert(item.name, t("catalog.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: () => householdId && deleteCatalogItem(householdId, item.id),
+      },
+    ]);
+  };
+
+  const openItemMenu = (item: CatalogItem) => {
+    Alert.alert(item.name, undefined, [
+      { text: t("common.edit"), onPress: () => setEditingItem(item) },
+      { text: t("common.delete"), style: "destructive", onPress: () => remove(item) },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
       <SafeAreaView style={styles.safe}>
@@ -163,7 +183,11 @@ export function CatalogPicker({
             const isSel = !!selected[item.id];
             return (
               <View style={[styles.row, isSel && styles.rowSelected]}>
-                <Pressable style={styles.rowMain} onPress={() => toggle(item.id)}>
+                <Pressable
+                  style={styles.rowMain}
+                  onPress={() => toggle(item.id)}
+                  onLongPress={() => openItemMenu(item)}
+                >
                   <View style={[styles.checkbox, isSel && styles.checkboxOn]}>
                     {isSel && <Text style={styles.checkmark}>✓</Text>}
                   </View>

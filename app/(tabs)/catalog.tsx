@@ -74,6 +74,14 @@ export default function CatalogScreen() {
     void setCatalogFavorite(householdId, item.name, !item.favorite);
   };
 
+  const openItemMenu = (item: CatalogItem) => {
+    Alert.alert(item.name, undefined, [
+      { text: t("common.edit"), onPress: () => setEditingItem(item) },
+      { text: t("common.delete"), style: "destructive", onPress: () => remove(item) },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScreenHeader title={t("catalog.title")} />
@@ -101,12 +109,14 @@ export default function CatalogScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.name}</Text>
-              {item.category ? (
-                <Text style={styles.cat}>{item.category}</Text>
-              ) : null}
-            </View>
+            <Pressable style={styles.rowMain} onLongPress={() => openItemMenu(item)}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{item.name}</Text>
+                {item.category ? (
+                  <Text style={styles.cat}>{item.category}</Text>
+                ) : null}
+              </View>
+            </Pressable>
             <FavoriteButton
               favorite={item.favorite === true}
               onPress={() => toggleFavorite(item)}
@@ -156,10 +166,15 @@ function useStyles() {
     row: {
       flexDirection: "row",
       alignItems: "center",
-      gap: spacing.md,
+      gap: spacing.sm,
       backgroundColor: colors.surface,
       borderRadius: radius.md,
+      paddingRight: spacing.sm,
+    },
+    rowMain: {
+      flex: 1,
       padding: spacing.md,
+      paddingRight: 0,
     },
     name: { fontSize: fs(16), color: colors.text, fontWeight: "500" },
     cat: { fontSize: fs(12), color: colors.textMuted, marginTop: 2 },
