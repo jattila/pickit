@@ -331,7 +331,6 @@ function catalogUpsertFields(data: {
     name,
     useCount: increment(1),
     lastUsedAt: serverTimestamp(),
-    defaultQuantity: deleteField(),
   };
   const category = data.category?.trim();
   if (category) payload.category = category;
@@ -457,7 +456,9 @@ export async function updateItem(
   if (catalogSnap.exists()) {
     batch.update(catalogRef, catalogPayload);
   } else {
-    batch.set(catalogRef, { ...catalogPayload, useCount: 1 });
+    const newCatalog: Record<string, unknown> = { name: newName, useCount: 1 };
+    if (newCategory) newCatalog.category = newCategory;
+    batch.set(catalogRef, newCatalog);
   }
 
   await batch.commit();

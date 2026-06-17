@@ -38,7 +38,7 @@ import { EditIconButton } from "../../src/components/EditIconButton";
 import { FavoriteButton } from "../../src/components/FavoriteButton";
 import { HamburgerButton } from "../../src/components/HamburgerButton";
 import { formatItemNameInput, itemNameKey, resolveItemInput } from "../../src/lib/itemName";
-import { isAlreadyCheckedOnList } from "../../src/lib/listItems";
+import { isAlreadyCheckedOnList, sortListItemsByFavorite } from "../../src/lib/listItems";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { useTranslation } from "../../src/context/LocaleContext";
@@ -116,11 +116,18 @@ export default function ListDetail() {
 
   const { unchecked, checked } = useMemo(() => {
     const list = items ?? [];
+    const isFav = (i: ListItem) => favoriteByName.get(itemNameKey(i.name)) === true;
     return {
-      unchecked: list.filter((i) => !i.checked),
-      checked: list.filter((i) => i.checked),
+      unchecked: sortListItemsByFavorite(
+        list.filter((i) => !i.checked),
+        isFav
+      ),
+      checked: sortListItemsByFavorite(
+        list.filter((i) => i.checked),
+        isFav
+      ),
     };
-  }, [items]);
+  }, [items, favoriteByName]);
 
   const total = (items ?? []).length;
   const done = checked.length;
