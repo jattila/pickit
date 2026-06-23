@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, Platform } from "react-native";
 import { CatalogItem } from "../types";
 import { itemNameKey } from "../lib/itemName";
 import { colors, spacing } from "../theme";
@@ -59,6 +59,10 @@ function useStyles() {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       backgroundColor: colors.surface,
+      ...Platform.select({
+        android: { elevation: 6 },
+        default: {},
+      }),
     },
     row: {
       flexDirection: "row",

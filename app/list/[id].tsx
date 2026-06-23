@@ -61,12 +61,11 @@ export default function ListDetail() {
   const bannerInset = useOfflineBannerInset();
   const keyboardHeight = useKeyboardHeight();
   const topPadding = bannerInset > 0 ? bannerInset : insets.top;
-  const bottomInset = Math.max(insets.bottom, spacing.lg);
-  /** Alsó beviteli sáv + safe area – a lista ne fusson alá. */
-  const listBottomPad = 64 + bottomInset;
-  /** iOS: abszolút pozíció. Android: adjustResize / softwareKeyboardLayoutMode kezeli. */
-  const addBarBottom = Platform.OS === "ios" ? keyboardHeight : 0;
-  const listPadExtra = Platform.OS === "ios" ? keyboardHeight : 0;
+  const bottomInset = Math.max(insets.bottom, spacing.sm);
+  /** Alsó sáv magassága – a lista ne fusson a beviteli mező alá. */
+  const addBarReserved =
+    bottomInset + 56 + spacing.sm + (draft.trim().length > 0 ? 132 : 0);
+  const listBottomPad = addBarReserved + keyboardHeight;
   const styles = useStyles();
   const { t } = useTranslation();
 
@@ -252,7 +251,7 @@ export default function ListDetail() {
         )}
 
         {items === null ? (
-          <View style={styles.center}>
+          <View style={[styles.center, styles.flex]}>
             <ActivityIndicator color={colors.primary} />
           </View>
         ) : (
@@ -260,53 +259,53 @@ export default function ListDetail() {
             style={styles.flex}
             data={unchecked}
             keyExtractor={(i) => i.id}
-            contentContainerStyle={[styles.listContent, { paddingBottom: listBottomPad + listPadExtra }]}
-            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[styles.listContent, { paddingBottom: listBottomPad }]}
+            keyboardShouldPersistTaps="always"
             keyboardDismissMode="on-drag"
-            ListEmptyComponent={
-              checked.length === 0 ? (
-                <EmptyState
-                  title={t("listDetail.emptyTitle")}
-                  subtitle={t("listDetail.emptySubtitle")}
-                />
-              ) : null
-            }
-            renderItem={({ item }) => (
-              <ItemRow
-                item={item}
-                favorite={favoriteByName.get(itemNameKey(item.name)) === true}
-                onToggle={() => handleToggle(item)}
-                onToggleFavorite={() => handleToggleFavorite(item)}
-                onEdit={() => setEditingItem(item)}
-                onDelete={() => handleDelete(item)}
+          ListEmptyComponent={
+            checked.length === 0 ? (
+              <EmptyState
+                title={t("listDetail.emptyTitle")}
+                subtitle={t("listDetail.emptySubtitle")}
               />
-            )}
-            ListFooterComponent={
-              checked.length > 0 ? (
-                <View style={styles.checkedSection}>
-                  <View style={styles.checkedHeader}>
-                    <Text style={styles.checkedTitle}>
-                      {t("listDetail.boughtSection", { count: done })}
-                    </Text>
-                    <Pressable onPress={confirmClear} hitSlop={8}>
-                      <Text style={styles.clearText}>{t("listDetail.clearBought")}</Text>
-                    </Pressable>
-                  </View>
-                  {checked.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      favorite={favoriteByName.get(itemNameKey(item.name)) === true}
-                      onToggle={() => handleToggle(item)}
-                      onToggleFavorite={() => handleToggleFavorite(item)}
-                      onEdit={() => setEditingItem(item)}
-                      onDelete={() => handleDelete(item)}
-                    />
-                  ))}
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <ItemRow
+              item={item}
+              favorite={favoriteByName.get(itemNameKey(item.name)) === true}
+              onToggle={() => handleToggle(item)}
+              onToggleFavorite={() => handleToggleFavorite(item)}
+              onEdit={() => setEditingItem(item)}
+              onDelete={() => handleDelete(item)}
+            />
+          )}
+          ListFooterComponent={
+            checked.length > 0 ? (
+              <View style={styles.checkedSection}>
+                <View style={styles.checkedHeader}>
+                  <Text style={styles.checkedTitle}>
+                    {t("listDetail.boughtSection", { count: done })}
+                  </Text>
+                  <Pressable onPress={confirmClear} hitSlop={8}>
+                    <Text style={styles.clearText}>{t("listDetail.clearBought")}</Text>
+                  </Pressable>
                 </View>
-              ) : null
-            }
-          />
+                {checked.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    favorite={favoriteByName.get(itemNameKey(item.name)) === true}
+                    onToggle={() => handleToggle(item)}
+                    onToggleFavorite={() => handleToggleFavorite(item)}
+                    onEdit={() => setEditingItem(item)}
+                    onDelete={() => handleDelete(item)}
+                  />
+                ))}
+              </View>
+            ) : null
+          }
+        />
         )}
       </View>
 
@@ -314,7 +313,7 @@ export default function ListDetail() {
         style={[
           styles.addBarWrap,
           {
-            bottom: addBarBottom,
+            bottom: keyboardHeight,
             paddingBottom: keyboardHeight > 0 ? spacing.sm : bottomInset,
           },
         ]}
@@ -340,6 +339,7 @@ export default function ListDetail() {
             blurOnSubmit={false}
             autoCapitalize="none"
             autoCorrect={false}
+            underlineColorAndroid="transparent"
           />
           <TextInput
             style={styles.qtyInput}
@@ -348,6 +348,7 @@ export default function ListDetail() {
             value={qty}
             onChangeText={setQty}
             onSubmitEditing={() => handleAdd()}
+            underlineColorAndroid="transparent"
           />
           <Pressable
             style={[styles.addBtn, !draft.trim() && styles.addBtnDisabled]}
@@ -458,7 +459,7 @@ function useStyles() {
     menuText: { fontSize: fs(26), color: colors.text, fontWeight: "700" },
     progressWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
     center: { flex: 1, alignItems: "center", justifyContent: "center" },
-    listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 24 },
+    listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md },
     item: {
       flexDirection: "row",
       alignItems: "center",
@@ -507,6 +508,11 @@ function useStyles() {
       backgroundColor: colors.surface,
       borderTopWidth: 1,
       borderTopColor: colors.border,
+      zIndex: 10,
+      ...Platform.select({
+        android: { elevation: 8 },
+        default: {},
+      }),
     },
     addBar: {
       flexDirection: "row",
@@ -526,12 +532,17 @@ function useStyles() {
     catalogBtnText: { fontSize: fs(20) },
     addInput: {
       flex: 1,
+      minWidth: 0,
       height: 48,
       backgroundColor: colors.surfaceAlt,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       fontSize: fs(16),
       color: colors.text,
+      ...Platform.select({
+        android: { textAlignVertical: "center", includeFontPadding: false },
+        default: {},
+      }),
     },
     qtyInput: {
       width: 56,
@@ -542,6 +553,10 @@ function useStyles() {
       fontSize: fs(15),
       color: colors.text,
       textAlign: "center",
+      ...Platform.select({
+        android: { textAlignVertical: "center", includeFontPadding: false },
+        default: {},
+      }),
     },
     addBtn: {
       width: 48,
