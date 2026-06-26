@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   Pressable,
   Alert,
 } from "react-native";
@@ -12,7 +9,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 import { useTranslation } from "../src/context/LocaleContext";
-import { Button, Input, Title, Subtitle } from "../src/components/ui";
+import { Button, Input, PasswordInput, Title, Subtitle } from "../src/components/ui";
+import { KeyboardAwareScrollView } from "../src/components/KeyboardAwareScrollView";
 import { InputModal } from "../src/components/InputModal";
 import { humanizeAuthError } from "../src/lib/authErrors";
 import { colors, spacing, radius } from "../src/theme";
@@ -79,11 +77,7 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.content}>
           <View style={styles.logoRow}>
             <View style={styles.logo}>
               <Text style={styles.logoText}>🛒</Text>
@@ -116,11 +110,12 @@ export default function Login() {
                   autoCapitalize="none"
                   keyboardType="email-address"
                 />
-                <Input
+                <PasswordInput
                   placeholder={t("login.passwordPlaceholder")}
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry
+                  showPasswordLabel={t("common.showPassword")}
+                  hidePasswordLabel={t("common.hidePassword")}
                 />
               </>
             )}
@@ -148,8 +143,7 @@ export default function Login() {
 
             {mode === "quick" && <Text style={styles.hint}>{t("login.quickHint")}</Text>}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
 
       <InputModal
         visible={showReset}

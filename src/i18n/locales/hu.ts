@@ -16,6 +16,8 @@ export const hu = {
     send: "Küldés",
     create: "Létrehozás",
     household: "Család",
+    showPassword: "Jelszó mutatása",
+    hidePassword: "Jelszó elrejtése",
   },
   tabs: {
     lists: "Listák",

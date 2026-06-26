@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,6 +9,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 import { useTranslation } from "../src/context/LocaleContext";
 import { Button, Input, Title, Subtitle, Card } from "../src/components/ui";
+import { KeyboardAwareScrollView } from "../src/components/KeyboardAwareScrollView";
 import { createHousehold, joinHousehold } from "../src/lib/firestore";
 import { colors, spacing, radius } from "../src/theme";
 import { useScaledStyleSheet } from "../src/theme/useScaledStyleSheet";
@@ -52,11 +50,7 @@ export default function Setup() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.content}>
           <Title>{t("setup.greeting", { name: displayName })}</Title>
           <Subtitle style={{ marginBottom: spacing.lg }}>{t("setup.subtitle")}</Subtitle>
 
@@ -126,8 +120,7 @@ export default function Setup() {
               router.replace("/login");
             }}
           />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -5,6 +5,7 @@ import {
   FlatList,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useRouter } from "expo-router";
@@ -12,10 +13,14 @@ import { useAuth } from "../../src/context/AuthContext";
 import {
   subscribeLists,
   createList,
+  renameList,
+  setListArchived,
+  deleteList,
 } from "../../src/lib/firestore";
 import { ShoppingList } from "../../src/types";
 import { Card, ProgressBar, EmptyState } from "../../src/components/ui";
 import { InputModal } from "../../src/components/InputModal";
+import { EditIconButton } from "../../src/components/EditIconButton";
 import { VerifyEmailBanner } from "../../src/components/VerifyEmailBanner";
 import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
@@ -28,6 +33,7 @@ export default function ListsScreen() {
   const { t } = useTranslation();
   const [lists, setLists] = useState<ShoppingList[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [renamingList, setRenamingList] = useState<ShoppingList | null>(null);
   const styles = useStyles();
 
   const householdId = profile?.householdId ?? null;
@@ -47,6 +53,47 @@ export default function ListsScreen() {
     setShowCreate(false);
     const id = await createList(householdId, user.uid, name);
     router.push({ pathname: "/list/[id]", params: { id, name } });
+  };
+
+  const confirmDeleteList = (list: ShoppingList) => {
+    Alert.alert(t("listDetail.confirmDeleteTitle"), t("listDetail.confirmDeleteBody"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: () => householdId && deleteList(householdId, list.id),
+      },
+    ]);
+  };
+
+  const openListMenu = (list: ShoppingList) => {
+    Alert.alert(list.name, undefined, [
+      { text: t("listDetail.menuRename"), onPress: () => setRenamingList(list) },
+      {
+        text: t("listDetail.menuArchive"),
+        onPress: () => householdId && setListArchived(householdId, list.id, true),
+      },
+      {
+        text: t("listDetail.menuDelete"),
+        style: "destructive",
+        onPress: () => confirmDeleteList(list),
+      },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  };
+
+  const handleRename = async (newName: string) => {
+    if (!householdId || !renamingList) return;
+    const listId = renamingList.id;
+    setRenamingList(null);
+    try {
+      await renameList(householdId, listId, newName);
+    } catch (err) {
+      Alert.alert(
+        t("listDetail.renameFailed"),
+        err instanceof Error ? err.message : t("common.unknownErrorOccurred")
+      );
+    }
   };
 
   const active = (lists ?? []).filter((l) => !l.archived);
@@ -81,6 +128,8 @@ export default function ListsScreen() {
               onPress={() =>
                 router.push({ pathname: "/list/[id]", params: { id: item.id, name: item.name } })
               }
+              onEdit={() => setRenamingList(item)}
+              onLongPress={() => openListMenu(item)}
             />
           )}
         />
@@ -98,11 +147,30 @@ export default function ListsScreen() {
         onCancel={() => setShowCreate(false)}
         onConfirm={handleCreate}
       />
+
+      <InputModal
+        visible={renamingList !== null}
+        title={t("listDetail.renameTitle")}
+        placeholder={t("listDetail.renamePlaceholder")}
+        initialValue={renamingList?.name ?? ""}
+        onCancel={() => setRenamingList(null)}
+        onConfirm={handleRename}
+      />
     </SafeAreaView>
   );
 }
 
-function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void }) {
+function ListRow({
+  list,
+  onPress,
+  onEdit,
+  onLongPress,
+}: {
+  list: ShoppingList;
+  onPress: () => void;
+  onEdit: () => void;
+  onLongPress: () => void;
+}) {
   const styles = useStyles();
   const { t } = useTranslation();
   const total = list.itemCount ?? 0;
@@ -111,8 +179,8 @@ function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void })
   const allDone = total > 0 && done >= total;
 
   return (
-    <Pressable onPress={onPress}>
-      <Card style={styles.row}>
+    <Card style={styles.row}>
+      <Pressable style={styles.rowMain} onPress={onPress} onLongPress={onLongPress}>
         <View style={styles.rowTop}>
           <Text style={styles.rowTitle} numberOfLines={1}>
             {list.name}
@@ -120,6 +188,7 @@ function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void })
           <Text style={[styles.badge, allDone && styles.badgeDone]}>
             {done}/{total}
           </Text>
+          <EditIconButton onPress={onEdit} />
         </View>
         <ProgressBar value={progress} />
         <Text style={styles.rowMeta}>
@@ -129,8 +198,8 @@ function ListRow({ list, onPress }: { list: ShoppingList; onPress: () => void })
             ? t("lists.allDone")
             : t("lists.itemsRemaining", { count: total - done })}
         </Text>
-      </Card>
-    </Pressable>
+      </Pressable>
+    </Card>
   );
 }
 
@@ -140,7 +209,12 @@ function useStyles() {
     center: { flex: 1, alignItems: "center", justifyContent: "center" },
     listContent: { padding: spacing.lg, gap: spacing.md, paddingBottom: 120 },
     row: { gap: spacing.sm },
-    rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    rowMain: { gap: spacing.sm },
+    rowTop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.xs,
+    },
     rowTitle: { fontSize: fs(17), fontWeight: "700", color: colors.text, flex: 1, marginRight: spacing.sm },
     badge: {
       fontSize: fs(13),

@@ -4,11 +4,10 @@ import {
   View,
   Text,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
 } from "react-native";
-import { Button, Input } from "./ui";
+import { Button, Input, PasswordInput } from "./ui";
+import { KeyboardAwareModalScroll } from "./KeyboardAwareScrollView";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "../context/LocaleContext";
 import { humanizeAuthError } from "../lib/authErrors";
@@ -65,15 +64,18 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.kav}
-        >
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <KeyboardAwareModalScroll contentContainerStyle={styles.modalScroll}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.title}>{t("linkAccount.title")}</Text>
             <Text style={styles.lead}>{t("linkAccount.lead")}</Text>
-            <Input placeholder={t("linkAccount.namePlaceholder")} value={name} onChangeText={setName} autoCapitalize="words" />
+            <Input
+              placeholder={t("linkAccount.namePlaceholder")}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+            />
             <Input
               placeholder={t("login.emailPlaceholder")}
               value={email}
@@ -81,11 +83,12 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
               autoCapitalize="none"
               keyboardType="email-address"
             />
-            <Input
+            <PasswordInput
               placeholder={t("linkAccount.passwordPlaceholder")}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              showPasswordLabel={t("common.showPassword")}
+              hidePasswordLabel={t("common.hidePassword")}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <View style={styles.row}>
@@ -93,8 +96,8 @@ export function LinkAccountModal({ visible, onClose, onLinked }: Props) {
               <Button title={t("common.save")} style={{ flex: 1 }} onPress={submit} loading={loading} />
             </View>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
+        </KeyboardAwareModalScroll>
+      </View>
     </Modal>
   );
 }
@@ -104,10 +107,11 @@ function useStyles() {
     backdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.4)",
-      justifyContent: "center",
       padding: spacing.xl,
     },
-    kav: { width: "100%" },
+    modalScroll: {
+      paddingHorizontal: 0,
+    },
     sheet: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,

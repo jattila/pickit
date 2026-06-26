@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Text,
   TextProps,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFontScale } from "../context/FontScaleContext";
 import { colors, radius, spacing, shadow } from "../theme";
 
@@ -49,6 +50,20 @@ function useUiStyles() {
           height: 52,
           fontSize: fs(16),
           color: colors.text,
+        },
+        passwordWrap: {
+          position: "relative",
+          justifyContent: "center",
+        },
+        passwordInput: {
+          paddingRight: spacing.xl + spacing.lg,
+        },
+        passwordToggle: {
+          position: "absolute",
+          right: spacing.md,
+          height: 52,
+          justifyContent: "center",
+          paddingHorizontal: spacing.xs,
         },
         title: { fontSize: fs(26), fontWeight: "800", color: colors.text },
         subtitle: { fontSize: fs(15), color: colors.textMuted, lineHeight: fs(21) },
@@ -142,6 +157,47 @@ export function Input(props: TextInputProps) {
       style={[styles.input, props.style]}
       {...props}
     />
+  );
+}
+
+interface PasswordInputProps extends TextInputProps {
+  showPasswordLabel?: string;
+  hidePasswordLabel?: string;
+}
+
+export function PasswordInput({
+  showPasswordLabel = "Show password",
+  hidePasswordLabel = "Hide password",
+  style,
+  ...props
+}: PasswordInputProps) {
+  const styles = useUiStyles();
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.passwordWrap}>
+      <TextInput
+        placeholderTextColor={colors.textMuted}
+        secureTextEntry={!visible}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[styles.input, styles.passwordInput, style]}
+        {...props}
+      />
+      <Pressable
+        style={styles.passwordToggle}
+        onPress={() => setVisible((v) => !v)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={visible ? hidePasswordLabel : showPasswordLabel}
+      >
+        <Ionicons
+          name={visible ? "eye-off-outline" : "eye-outline"}
+          size={22}
+          color={colors.textMuted}
+        />
+      </Pressable>
+    </View>
   );
 }
 

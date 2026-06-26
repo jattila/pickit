@@ -4,9 +4,9 @@ import {
   View,
   Text,
   StyleSheet,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
 } from "react-native";
 import { Button, Input } from "./ui";
 import { useTranslation } from "../context/LocaleContext";
@@ -43,13 +43,13 @@ export function InputModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t("common.close")} />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.kav}
-        >
-          <View style={styles.sheet}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.kavRoot}
+      >
+        <View style={styles.backdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t("common.close")} />
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.title}>{title}</Text>
             <Input
               placeholder={placeholder}
@@ -66,22 +66,22 @@ export function InputModal({
                 onPress={() => value.trim() && onConfirm(value.trim())}
               />
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 function useStyles() {
   return useScaledStyleSheet((fs) => ({
+    kavRoot: { flex: 1 },
     backdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.4)",
       justifyContent: "center",
       padding: spacing.xl,
     },
-    kav: { width: "100%" },
     sheet: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,

@@ -19,6 +19,8 @@ export const de: TranslationTree = {
     send: "Senden",
     create: "Erstellen",
     household: "Haushalt",
+    showPassword: "Passwort anzeigen",
+    hidePassword: "Passwort verbergen",
   },
   tabs: {
     lists: "Listen",

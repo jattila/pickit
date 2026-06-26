@@ -43,6 +43,9 @@ import { colors, spacing, radius, shadow } from "../../src/theme";
 import { useScaledStyleSheet } from "../../src/theme/useScaledStyleSheet";
 import { useTranslation } from "../../src/context/LocaleContext";
 
+/** Javaslatok max. magassága – mindig lefoglaljuk, hogy gépeléskor ne ugráljon a lista. */
+const SUGGESTIONS_RESERVE = 132;
+
 export default function ListDetail() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
@@ -61,14 +64,24 @@ export default function ListDetail() {
   const listRef = useRef<FlatList<ListItem>>(null);
   const listScrollY = useRef(0);
   const bannerInset = useOfflineBannerInset();
-  const { keyboardHeight, keyboardVisible, layoutLockHeight } = useKeyboardLayout();
+  const keyboardOverlayEnabled = !showRename && !showCatalog && editingItem === null;
+  const {
+    keyboardHeight,
+    keyboardVisible,
+    windowResizedForKeyboard,
+    androidResizeSupplement,
+  } = useKeyboardLayout("overlay", keyboardOverlayEnabled);
   const topPadding = bannerInset > 0 ? bannerInset : insets.top;
   const bottomInset = Math.max(insets.bottom, spacing.sm);
   /** Alsó sáv magassága – a lista ne fusson a lebegő sáv alá. */
-  const addBarReserved =
-    bottomInset + 48 + spacing.sm * 2 + (draft.trim().length > 0 ? 132 : 0);
-  const addBarBottom = keyboardVisible ? keyboardHeight + spacing.sm : bottomInset;
-  const listBottomPad = addBarReserved + (keyboardVisible ? keyboardHeight : 0);
+  const addBarReserved = bottomInset + 48 + spacing.sm * 2 + SUGGESTIONS_RESERVE;
+  const addBarBottom = (() => {
+    if (!keyboardVisible) return bottomInset;
+    if (Platform.OS === "ios") return keyboardHeight + spacing.sm;
+    if (windowResizedForKeyboard) return bottomInset + androidResizeSupplement;
+    return keyboardHeight + spacing.sm;
+  })();
+  const listBottomPad = addBarReserved;
   const styles = useStyles();
   const { t } = useTranslation();
 
@@ -134,6 +147,7 @@ export default function ListDetail() {
   const total = (items ?? []).length;
   const done = checked.length;
   const progress = total > 0 ? done / total : 0;
+  const allDone = total > 0 && done >= total;
 
   const handleAdd = async (nameOverride?: string, quantityOverride?: string) => {
     if (!householdId || !user) return;
@@ -235,29 +249,23 @@ export default function ListDetail() {
   };
 
   return (
-    <View
-      style={[
-        styles.safe,
-        { paddingTop: topPadding },
-        layoutLockHeight != null && { height: layoutLockHeight },
-      ]}
-    >
+    <View style={[styles.safe, { paddingTop: topPadding }]}>
       <View style={styles.flex}>
         <View style={styles.header}>
           <HamburgerButton />
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.h1} numberOfLines={1}>
-              {listName}
-            </Text>
-            <Text style={styles.sub}>
-              {total === 0 ? t("listDetail.empty") : t("listDetail.progress", { done, total })}
-            </Text>
-          </View>
-          <Pressable onPress={openListMenu} hitSlop={12} style={styles.menuBtn}>
-            <Text style={styles.menuText}>⋯</Text>
+          <Pressable style={styles.headerTitle} onLongPress={openListMenu}>
+            <View style={styles.headerTitleRow}>
+              <Text style={styles.h1} numberOfLines={1}>
+                {listName}
+              </Text>
+              <Text style={[styles.badge, allDone && styles.badgeDone]}>
+                {done}/{total}
+              </Text>
+              <EditIconButton onPress={() => setShowRename(true)} />
+            </View>
           </Pressable>
         </View>
 
@@ -475,10 +483,24 @@ function useStyles() {
     },
     backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
     backText: { fontSize: fs(34), color: colors.text, lineHeight: fs(36) },
-    h1: { fontSize: fs(20), fontWeight: "800", color: colors.text },
-    sub: { fontSize: fs(13), color: colors.textMuted },
-    menuBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-    menuText: { fontSize: fs(26), color: colors.text, fontWeight: "700" },
+    headerTitle: { flex: 1 },
+    headerTitleRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.xs,
+    },
+    h1: { fontSize: fs(20), fontWeight: "800", color: colors.text, flex: 1, marginRight: spacing.sm },
+    badge: {
+      fontSize: fs(13),
+      fontWeight: "700",
+      color: colors.textMuted,
+      backgroundColor: colors.surfaceAlt,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      overflow: "hidden",
+    },
+    badgeDone: { color: colors.white, backgroundColor: colors.primary },
     progressWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
     center: { flex: 1, alignItems: "center", justifyContent: "center" },
     listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md },

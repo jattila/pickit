@@ -10,11 +10,20 @@ import {
 /** Android finomhangolás. */
 export const ANDROID_KEYBOARD_EXTRA = 5;
 
+const RESIZE_THRESHOLD = 72;
+
+export type KeyboardLayoutMode =
+  /** Görgethető űrlap – rögzített magasság + alsó padding. */
+  | "scroll"
+  /** Lebegő alsó sáv – egyszer számol, gépelés közben nem ugrál. */
+  | "overlay";
+
 export interface KeyboardLayout {
   keyboardHeight: number;
   keyboardVisible: boolean;
-  /** Android: billentyűzetnyitás előtti ablakmagasság – dupla resize ellen. */
   layoutLockHeight: number | undefined;
+  windowResizedForKeyboard: boolean;
+  androidResizeSupplement: number;
 }
 
 function readWindowHeight(): number {
@@ -34,45 +43,87 @@ function resolveAndroidKeyboardHeight(event: KeyboardEvent, windowHeight: number
   return Math.min(offset + ANDROID_KEYBOARD_EXTRA, maxKeyboard);
 }
 
-/**
- * Billentyűzet-layout.
- * Android: rögzített konténermagasság + teljes billentyűzet-emelés (resize-től függetlenül).
- */
-export function useKeyboardLayout(): KeyboardLayout {
+export function useKeyboardLayout(
+  mode: KeyboardLayoutMode = "scroll",
+  enabled = true
+): KeyboardLayout {
   const restWindowHeight = useRef(readWindowHeight());
   const keyboardOpenRef = useRef(false);
+  const overlayLockedRef = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [layoutLockHeight, setLayoutLockHeight] = useState<number | undefined>();
+  const [windowResizedForKeyboard, setWindowResizedForKeyboard] = useState(false);
+  const [androidResizeSupplement, setAndroidResizeSupplement] = useState(0);
 
   useEffect(() => {
+    if (!enabled) {
+      keyboardOpenRef.current = false;
+      overlayLockedRef.current = false;
+      setKeyboardHeight(0);
+      setLayoutLockHeight(undefined);
+      setWindowResizedForKeyboard(false);
+      setAndroidResizeSupplement(0);
+      return;
+    }
+
     const syncRestHeight = (size?: ScaledSize) => {
       restWindowHeight.current = size?.height ?? readWindowHeight();
     };
 
+    syncRestHeight();
+
     const applyAndroidShow = (event: KeyboardEvent) => {
       const locked = restWindowHeight.current;
-      const height = resolveAndroidKeyboardHeight(event, locked);
-      if (height <= 0) return;
+      const kbHeight = resolveAndroidKeyboardHeight(event, locked);
+      if (kbHeight <= 0) return;
 
       keyboardOpenRef.current = true;
+
+      if (mode === "overlay") {
+        if (overlayLockedRef.current) return;
+
+        const currentHeight = readWindowHeight();
+        const shrink = Math.max(0, locked - currentHeight);
+        const resized = shrink >= RESIZE_THRESHOLD;
+
+        overlayLockedRef.current = true;
+        setLayoutLockHeight(undefined);
+        setWindowResizedForKeyboard(resized);
+        if (resized) {
+          setKeyboardHeight(0);
+          setAndroidResizeSupplement(Math.max(0, kbHeight - shrink));
+        } else {
+          setKeyboardHeight(kbHeight);
+          setAndroidResizeSupplement(0);
+        }
+        return;
+      }
+
+      setWindowResizedForKeyboard(false);
+      setAndroidResizeSupplement(0);
       setLayoutLockHeight(locked);
-      setKeyboardHeight(height);
+      setKeyboardHeight(kbHeight);
     };
 
     const onShow = (event: KeyboardEvent) => {
       if (Platform.OS === "android") {
-        applyAndroidShow(event);
+        requestAnimationFrame(() => applyAndroidShow(event));
         return;
       }
       keyboardOpenRef.current = true;
       setLayoutLockHeight(undefined);
+      setWindowResizedForKeyboard(false);
+      setAndroidResizeSupplement(0);
       setKeyboardHeight(event.endCoordinates.height);
     };
 
     const onHide = () => {
       keyboardOpenRef.current = false;
+      overlayLockedRef.current = false;
       setKeyboardHeight(0);
       setLayoutLockHeight(undefined);
+      setWindowResizedForKeyboard(false);
+      setAndroidResizeSupplement(0);
       requestAnimationFrame(() => syncRestHeight());
     };
 
@@ -83,8 +134,10 @@ export function useKeyboardLayout(): KeyboardLayout {
     const hideSub = Keyboard.addListener(hideEvent, onHide);
 
     let frameSub: ReturnType<typeof Keyboard.addListener> | undefined;
-    if (Platform.OS === "android") {
-      frameSub = Keyboard.addListener("keyboardDidChangeFrame", applyAndroidShow);
+    if (Platform.OS === "android" && mode === "scroll") {
+      frameSub = Keyboard.addListener("keyboardDidChangeFrame", (event) => {
+        requestAnimationFrame(() => applyAndroidShow(event));
+      });
     }
 
     const dimSub = Dimensions.addEventListener("change", ({ window }) => {
@@ -99,11 +152,16 @@ export function useKeyboardLayout(): KeyboardLayout {
       frameSub?.remove();
       dimSub.remove();
     };
-  }, []);
+  }, [mode, enabled]);
+
+  const keyboardVisible =
+    keyboardHeight > 0 || windowResizedForKeyboard || androidResizeSupplement > 0;
 
   return {
     keyboardHeight,
-    keyboardVisible: keyboardHeight > 0,
+    keyboardVisible,
     layoutLockHeight,
+    windowResizedForKeyboard,
+    androidResizeSupplement,
   };
 }
