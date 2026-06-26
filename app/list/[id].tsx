@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { useOfflineBannerInset } from "../../src/context/NetworkContext";
-import { useKeyboardHeight } from "../../src/hooks/useKeyboardHeight";
+import { useKeyboardLayout } from "../../src/hooks/useKeyboardHeight";
 import {
   subscribeItems,
   subscribeCatalog,
@@ -58,14 +58,17 @@ export default function ListDetail() {
   const [listMeta, setListMeta] = useState<ShoppingList | null>(null);
   const [showRename, setShowRename] = useState(false);
   const insets = useSafeAreaInsets();
+  const listRef = useRef<FlatList<ListItem>>(null);
+  const listScrollY = useRef(0);
   const bannerInset = useOfflineBannerInset();
-  const keyboardHeight = useKeyboardHeight();
+  const { keyboardHeight, keyboardVisible, layoutLockHeight } = useKeyboardLayout();
   const topPadding = bannerInset > 0 ? bannerInset : insets.top;
   const bottomInset = Math.max(insets.bottom, spacing.sm);
-  /** Alsó sáv magassága – a lista ne fusson a beviteli mező alá. */
+  /** Alsó sáv magassága – a lista ne fusson a lebegő sáv alá. */
   const addBarReserved =
-    bottomInset + 56 + spacing.sm + (draft.trim().length > 0 ? 132 : 0);
-  const listBottomPad = addBarReserved + keyboardHeight;
+    bottomInset + 48 + spacing.sm * 2 + (draft.trim().length > 0 ? 132 : 0);
+  const addBarBottom = keyboardVisible ? keyboardHeight + spacing.sm : bottomInset;
+  const listBottomPad = addBarReserved + (keyboardVisible ? keyboardHeight : 0);
   const styles = useStyles();
   const { t } = useTranslation();
 
@@ -199,6 +202,14 @@ export default function ListDetail() {
     }
   };
 
+  const keepListScroll = () => {
+    if (Platform.OS !== "android") return;
+    const y = listScrollY.current;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset: y, animated: false });
+    });
+  };
+
   const openListMenu = () => {
     Alert.alert(listName, undefined, [
       { text: t("listDetail.menuRename"), onPress: () => setShowRename(true) },
@@ -224,7 +235,13 @@ export default function ListDetail() {
   };
 
   return (
-    <View style={[styles.safe, { paddingTop: topPadding }]}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: topPadding },
+        layoutLockHeight != null && { height: layoutLockHeight },
+      ]}
+    >
       <View style={styles.flex}>
         <View style={styles.header}>
           <HamburgerButton />
@@ -256,12 +273,17 @@ export default function ListDetail() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
             style={styles.flex}
             data={unchecked}
             keyExtractor={(i) => i.id}
             contentContainerStyle={[styles.listContent, { paddingBottom: listBottomPad }]}
             keyboardShouldPersistTaps="always"
             keyboardDismissMode="on-drag"
+            onScroll={(e) => {
+              listScrollY.current = e.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={16}
           ListEmptyComponent={
             checked.length === 0 ? (
               <EmptyState
@@ -312,10 +334,8 @@ export default function ListDetail() {
       <View
         style={[
           styles.addBarWrap,
-          {
-            bottom: keyboardHeight,
-            paddingBottom: keyboardHeight > 0 ? spacing.sm : bottomInset,
-          },
+          styles.addBarAbsolute,
+          { bottom: addBarBottom },
         ]}
       >
         <CatalogSuggestions
@@ -335,6 +355,7 @@ export default function ListDetail() {
             value={draft}
             onChangeText={(text) => setDraft(formatItemNameInput(text))}
             onSubmitEditing={() => handleAdd()}
+            onFocus={keepListScroll}
             returnKeyType="done"
             blurOnSubmit={false}
             autoCapitalize="none"
@@ -348,6 +369,7 @@ export default function ListDetail() {
             value={qty}
             onChangeText={setQty}
             onSubmitEditing={() => handleAdd()}
+            onFocus={keepListScroll}
             underlineColorAndroid="transparent"
           />
           <Pressable
@@ -502,17 +524,18 @@ function useStyles() {
     checkedTitle: { fontSize: fs(14), fontWeight: "700", color: colors.textMuted },
     clearText: { fontSize: fs(14), color: colors.danger, fontWeight: "600" },
     addBarWrap: {
-      position: "absolute",
-      left: 0,
-      right: 0,
       backgroundColor: colors.surface,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      zIndex: 10,
       ...Platform.select({
         android: { elevation: 8 },
         default: {},
       }),
+    },
+    addBarAbsolute: {
+      position: "absolute",
+      left: 0,
+      right: 0,
     },
     addBar: {
       flexDirection: "row",
@@ -520,6 +543,7 @@ function useStyles() {
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
     },
     catalogBtn: {
       width: 48,
