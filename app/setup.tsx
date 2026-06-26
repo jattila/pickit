@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   Pressable,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 import { useTranslation } from "../src/context/LocaleContext";
 import { Button, Input, Title, Subtitle, Card } from "../src/components/ui";
@@ -17,15 +18,37 @@ import { useScaledStyleSheet } from "../src/theme/useScaledStyleSheet";
 type Mode = "create" | "join";
 
 export default function Setup() {
-  const { user, displayName, requiresVerification, signOut } = useAuth();
+  const { user, displayName, requiresVerification, reloadUser, signOut } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("create");
   const [householdName, setHouseholdName] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingVerify, setCheckingVerify] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const styles = useStyles();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (requiresVerification) void reloadUser();
+    }, [requiresVerification, reloadUser])
+  );
+
+  const handleRefreshVerify = async () => {
+    setCheckingVerify(true);
+    setError(null);
+    try {
+      const verified = await reloadUser();
+      if (verified) {
+        Alert.alert(t("common.done"), t("settings.verifiedSuccess"));
+      } else {
+        Alert.alert(t("settings.notVerifiedYet"), t("settings.notVerifiedHint"));
+      }
+    } finally {
+      setCheckingVerify(false);
+    }
+  };
 
   const submit = async () => {
     if (!user) return;
@@ -36,8 +59,9 @@ export default function Setup() {
         if (!householdName.trim()) throw new Error(t("setup.errHouseholdName"));
         await createHousehold(user.uid, displayName, householdName.trim());
       } else {
-        if (requiresVerification) throw new Error(t("setup.errVerifyRequired"));
         if (!code.trim()) throw new Error(t("setup.errInviteCode"));
+        const verified = await reloadUser();
+        if (!verified) throw new Error(t("setup.errVerifyRequired"));
         await joinHousehold(user.uid, displayName, code.trim());
       }
       router.replace("/(tabs)");
@@ -96,7 +120,14 @@ export default function Setup() {
                 />
                 <Text style={styles.hint}>{t("setup.inviteHint")}</Text>
                 {requiresVerification ? (
-                  <Text style={styles.warn}>{t("setup.verifyWarn")}</Text>
+                  <>
+                    <Text style={styles.warn}>{t("setup.verifyWarn")}</Text>
+                    <Pressable onPress={handleRefreshVerify} disabled={checkingVerify}>
+                      <Text style={[styles.link, checkingVerify && styles.linkDisabled]}>
+                        {t("settings.refresh")}
+                      </Text>
+                    </Pressable>
+                  </>
                 ) : null}
               </>
             )}
@@ -107,7 +138,6 @@ export default function Setup() {
               title={mode === "create" ? t("setup.createHousehold") : t("setup.join")}
               onPress={submit}
               loading={loading}
-              disabled={mode === "join" && requiresVerification}
             />
           </Card>
 
@@ -143,6 +173,8 @@ function useStyles() {
     label: { fontSize: fs(14), fontWeight: "600", color: colors.text },
     hint: { fontSize: fs(13), color: colors.textMuted, lineHeight: fs(19) },
     warn: { fontSize: fs(13), color: "#8A5A1A", lineHeight: fs(19), fontWeight: "600" },
+    link: { fontSize: fs(14), fontWeight: "600", color: colors.primary, alignSelf: "flex-start" },
+    linkDisabled: { opacity: 0.5 },
     error: { color: colors.danger, fontSize: fs(14) },
   }));
 }

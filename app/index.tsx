@@ -8,8 +8,8 @@ export default function Index() {
   if (!user) {
     return <Redirect href="/login" />;
   }
-  if (profile?.householdId) {
-    return <Redirect href="/(tabs)" />;
+  if (profile && !profile.householdId) {
+    return <Redirect href="/setup" />;
   }
-  return <Redirect href="/setup" />;
+  return <Redirect href="/(tabs)" />;
 }

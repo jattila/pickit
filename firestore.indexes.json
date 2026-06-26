@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "pushBatchQueue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sent", "order": "ASCENDING" },
+        { "fieldPath": "sendAfter", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

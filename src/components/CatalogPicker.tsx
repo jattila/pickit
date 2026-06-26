@@ -32,6 +32,7 @@ interface Props {
   householdId: string | null;
   listId: string;
   uid: string;
+  actorName: string;
   existingNames: string[];
   /** Bejelölt tételek nevei – gyors hozzáadásnál külön üzenethez. */
   checkedNames: string[];
@@ -43,6 +44,7 @@ export function CatalogPicker({
   householdId,
   listId,
   uid,
+  actorName,
   existingNames,
   checkedNames,
   onClose,
@@ -90,7 +92,7 @@ export function CatalogPicker({
       return;
     }
     setSearch("");
-    await addItem(householdId, listId, uid, { name, quantity });
+    await addItem(householdId, listId, uid, { name, quantity }, actorName);
   };
 
   const selectedItems = catalog.filter((c) => selected[c.id]);
@@ -101,7 +103,7 @@ export function CatalogPicker({
 
   const confirm = async () => {
     if (!householdId || count === 0) return;
-    await addItemsFromCatalog(householdId, listId, uid, selectedItems);
+    await addItemsFromCatalog(householdId, listId, uid, selectedItems, actorName);
     onClose();
   };
 

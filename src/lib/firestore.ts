@@ -30,6 +30,7 @@ import {
 import { normalizeItemName } from "./itemName";
 import { clampFontScaleLevel } from "../theme/fontScale";
 import { normalizeLocale, type AppLocale } from "../i18n/types";
+import { logPushActivity } from "./pushActivity";
 
 /* ----------------------------- segédfüggvények ---------------------------- */
 
@@ -55,6 +56,8 @@ export interface UserProfile {
   householdId: ID | null;
   fontScaleLevel?: number;
   locale?: AppLocale;
+  pushTokens?: string[];
+  notificationsEnabled?: boolean;
 }
 
 export async function getUserProfile(uid: ID): Promise<UserProfile | null> {
@@ -249,42 +252,66 @@ export function subscribeList(
 export async function createList(
   householdId: ID,
   uid: ID,
-  name: string
+  name: string,
+  actorName?: string
 ): Promise<ID> {
+  const listName = normalizeName(name) || "Bevásárlólista";
   const ref = await addDoc(listsCol(householdId), {
     householdId,
-    name: normalizeName(name) || "Bevásárlólista",
+    name: listName,
     archived: false,
     createdBy: uid,
     createdAt: serverTimestamp(),
     itemCount: 0,
     checkedCount: 0,
   });
+  if (actorName) {
+    void logPushActivity(householdId, uid, actorName, {
+      type: "list_created",
+      listName,
+    });
+  }
   return ref.id;
 }
 
 export async function renameList(
   householdId: ID,
   listId: ID,
-  name: string
+  name: string,
+  actor?: { uid: ID; name: string }
 ): Promise<void> {
-  await updateDoc(doc(listsCol(householdId), listId), {
-    name: normalizeName(name),
-  });
+  const listName = normalizeName(name);
+  await updateDoc(doc(listsCol(householdId), listId), { name: listName });
+  if (actor) {
+    void logPushActivity(householdId, actor.uid, actor.name, {
+      type: "list_renamed",
+      listName,
+    });
+  }
 }
 
 export async function setListArchived(
   householdId: ID,
   listId: ID,
-  archived: boolean
+  archived: boolean,
+  actor?: { uid: ID; name: string }
 ): Promise<void> {
+  const listName = await getListName(householdId, listId);
   await updateDoc(doc(listsCol(householdId), listId), { archived });
+  if (actor && archived) {
+    void logPushActivity(householdId, actor.uid, actor.name, {
+      type: "list_archived",
+      listName,
+    });
+  }
 }
 
 export async function deleteList(
   householdId: ID,
-  listId: ID
+  listId: ID,
+  actor?: { uid: ID; name: string }
 ): Promise<void> {
+  const listName = await getListName(householdId, listId);
   const itemsSnap = await getDocs(
     collection(listsCol(householdId), listId, "items")
   );
@@ -292,12 +319,23 @@ export async function deleteList(
   itemsSnap.forEach((d) => batch.delete(d.ref));
   batch.delete(doc(listsCol(householdId), listId));
   await batch.commit();
+  if (actor) {
+    void logPushActivity(householdId, actor.uid, actor.name, {
+      type: "list_deleted",
+      listName,
+    });
+  }
 }
 
 /* --------------------------------- tételek ------------------------------- */
 
 function itemsCol(householdId: ID, listId: ID) {
   return collection(db, "households", householdId, "lists", listId, "items");
+}
+
+async function getListName(householdId: ID, listId: ID): Promise<string> {
+  const snap = await getDoc(doc(listsCol(householdId), listId));
+  return snap.exists() ? ((snap.data().name as string) || "Lista") : "Lista";
 }
 
 function catalogCol(householdId: ID) {
@@ -363,7 +401,8 @@ export async function addItem(
   householdId: ID,
   listId: ID,
   uid: ID,
-  input: NewItemInput
+  input: NewItemInput,
+  actorName?: string
 ): Promise<void> {
   const name = normalizeItemName(input.name);
   if (!name) return;
@@ -390,6 +429,15 @@ export async function addItem(
     { merge: true }
   );
   await batch.commit();
+
+  if (actorName) {
+    const listName = await getListName(householdId, listId);
+    void logPushActivity(householdId, uid, actorName, {
+      type: "item_added",
+      listName,
+      itemName: name,
+    });
+  }
 }
 
 export async function toggleItem(
@@ -411,6 +459,13 @@ export async function toggleItem(
     checkedCount: increment(checked ? 1 : -1),
   });
   await batch.commit();
+
+  const listName = await getListName(householdId, listId);
+  void logPushActivity(householdId, uid, displayName, {
+    type: checked ? "item_checked" : "item_unchecked",
+    listName,
+    itemName: item.name,
+  });
 }
 
 export async function updateItem(
@@ -467,7 +522,8 @@ export async function updateItem(
 export async function deleteItem(
   householdId: ID,
   listId: ID,
-  item: ListItem
+  item: ListItem,
+  actor?: { uid: ID; name: string }
 ): Promise<void> {
   const batch = writeBatch(db);
   batch.delete(doc(itemsCol(householdId, listId), item.id));
@@ -476,12 +532,22 @@ export async function deleteItem(
     checkedCount: increment(item.checked ? -1 : 0),
   });
   await batch.commit();
+
+  if (actor) {
+    const listName = await getListName(householdId, listId);
+    void logPushActivity(householdId, actor.uid, actor.name, {
+      type: "item_deleted",
+      listName,
+      itemName: item.name,
+    });
+  }
 }
 
 /** Bejelölt tételek eltávolítása (vásárlás vége). */
 export async function clearCheckedItems(
   householdId: ID,
-  listId: ID
+  listId: ID,
+  actor?: { uid: ID; name: string }
 ): Promise<void> {
   const q = query(itemsCol(householdId, listId), where("checked", "==", true));
   const snap = await getDocs(q);
@@ -493,6 +559,15 @@ export async function clearCheckedItems(
     checkedCount: increment(-snap.size),
   });
   await batch.commit();
+
+  if (actor) {
+    const listName = await getListName(householdId, listId);
+    void logPushActivity(householdId, actor.uid, actor.name, {
+      type: "items_cleared",
+      listName,
+      count: snap.size,
+    });
+  }
 }
 
 /* -------------------------------- katalógus ------------------------------ */
@@ -593,7 +668,8 @@ export async function addItemsFromCatalog(
   householdId: ID,
   listId: ID,
   uid: ID,
-  catalogItems: CatalogItem[]
+  catalogItems: CatalogItem[],
+  actorName?: string
 ): Promise<void> {
   if (catalogItems.length === 0) return;
   const batch = writeBatch(db);
@@ -624,4 +700,13 @@ export async function addItemsFromCatalog(
     itemCount: increment(catalogItems.length),
   });
   await batch.commit();
+
+  if (actorName) {
+    const listName = await getListName(householdId, listId);
+    void logPushActivity(householdId, uid, actorName, {
+      type: "items_added",
+      listName,
+      count: catalogItems.length,
+    });
+  }
 }

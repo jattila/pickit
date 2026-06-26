@@ -159,7 +159,7 @@ export default function ListDetail() {
     }
     setDraft("");
     setQty("");
-    await addItem(householdId, id, user.uid, { name, quantity });
+    await addItem(householdId, id, user.uid, { name, quantity }, displayName);
   };
 
   const handlePickSuggestion = (item: CatalogItem) => {
@@ -172,8 +172,8 @@ export default function ListDetail() {
   };
 
   const handleDelete = (item: ListItem) => {
-    if (!householdId) return;
-    void deleteItem(householdId, id, item);
+    if (!householdId || !user) return;
+    void deleteItem(householdId, id, item, { uid: user.uid, name: displayName });
   };
 
   const handleSaveEdit = async (data: { name: string; quantity: string }) => {
@@ -196,17 +196,20 @@ export default function ListDetail() {
       {
         text: t("common.delete"),
           style: "destructive",
-          onPress: () => householdId && clearCheckedItems(householdId, id),
+          onPress: () =>
+            householdId &&
+            user &&
+            clearCheckedItems(householdId, id, { uid: user.uid, name: displayName }),
         },
       ]
     );
   };
 
   const handleRename = async (newName: string) => {
-    if (!householdId || !id) return;
+    if (!householdId || !id || !user) return;
     setShowRename(false);
     try {
-      await renameList(householdId, id, newName);
+      await renameList(householdId, id, newName, { uid: user.uid, name: displayName });
       router.setParams({ name: newName });
     } catch (err) {
       Alert.alert(
@@ -229,7 +232,12 @@ export default function ListDetail() {
       { text: t("listDetail.menuRename"), onPress: () => setShowRename(true) },
       {
         text: t("listDetail.menuArchive"),
-        onPress: () => householdId && setListArchived(householdId, id, true).then(() => router.back()),
+        onPress: () =>
+          householdId &&
+          user &&
+          setListArchived(householdId, id, true, { uid: user.uid, name: displayName }).then(() =>
+            router.back()
+          ),
       },
       {
         text: t("listDetail.menuDelete"),
@@ -240,7 +248,12 @@ export default function ListDetail() {
             {
               text: t("common.delete"),
               style: "destructive",
-              onPress: () => householdId && deleteList(householdId, id).then(() => router.back()),
+              onPress: () =>
+                householdId &&
+                user &&
+                deleteList(householdId, id, { uid: user.uid, name: displayName }).then(() =>
+                  router.back()
+                ),
             },
           ]),
       },
@@ -395,6 +408,7 @@ export default function ListDetail() {
         householdId={householdId}
         listId={id}
         uid={user?.uid ?? ""}
+        actorName={displayName}
         existingNames={existingNames}
         checkedNames={checkedNames}
         onClose={() => setShowCatalog(false)}

@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { AppState, AppStateStatus } from "react-native";
 import {
   onAuthStateChanged,
   signInAnonymously,
@@ -29,6 +30,7 @@ import {
   UserProfile,
 } from "../lib/firestore";
 import { humanizeAuthError } from "../lib/authErrors";
+import { clearPushTokens } from "../lib/pushNotifications";
 import { translate } from "../i18n/translate";
 import { normalizeLocale } from "../i18n/types";
 import { Household } from "../types";
@@ -188,7 +190,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   };
 
+  const reloadUserRef = useRef(reloadUser);
+  reloadUserRef.current = reloadUser;
+
+  // A megerősítő link a böngészőben/email appban frissíti a Firebase-t, de a
+  // helyi session cache-elt marad – app előtérbe kerüléskor szinkronizálunk.
+  useEffect(() => {
+    const u = user;
+    if (!u || u.isAnonymous || u.emailVerified) return;
+
+    const sync = () => {
+      void reloadUserRef.current();
+    };
+
+    sync();
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") sync();
+    });
+    return () => sub.remove();
+  }, [user?.uid, user?.emailVerified, user?.isAnonymous]);
+
   const signOut = async () => {
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      try {
+        await clearPushTokens(uid);
+      } catch {
+        // token törlés nem blokkolja a kijelentkezést
+      }
+    }
     await fbSignOut(auth);
   };
 

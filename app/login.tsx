@@ -33,7 +33,7 @@ export default function Login() {
   const styles = useStyles();
 
   if (user) {
-    return <Redirect href="/" />;
+    return <Redirect href="/(tabs)" />;
   }
 
   const handleReset = async (value: string) => {
@@ -50,6 +50,7 @@ export default function Login() {
 
   const submit = async () => {
     setError(null);
+    setInfo(null);
     setLoading(true);
     try {
       if (mode === "quick") {
@@ -67,10 +68,9 @@ export default function Login() {
           t("login.signupSuccessBody", { email: email.trim() })
         );
       }
-      router.replace("/");
+      router.replace("/(tabs)");
     } catch (e: any) {
       setError(humanizeAuthError(e?.message ?? "", t));
-    } finally {
       setLoading(false);
     }
   };

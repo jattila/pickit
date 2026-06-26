@@ -12,6 +12,7 @@ import { NotConfigured } from "../src/components/NotConfigured";
 import { MenuProvider } from "../src/context/MenuContext";
 import { SideMenu } from "../src/components/SideMenu";
 import { OfflineBanner } from "../src/components/OfflineBanner";
+import { PushNotificationRegistrar } from "../src/components/PushNotificationRegistrar";
 import { Sentry } from "../src/config/sentry";
 import { colors } from "../src/theme";
 
@@ -56,6 +57,7 @@ function RootLayout() {
               <FontScaleProvider>
                 <MenuProvider>
                   <StatusBar style="dark" />
+                  <PushNotificationRegistrar />
                   <RootNavigator />
                   <SideMenu />
                 </MenuProvider>

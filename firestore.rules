@@ -35,8 +35,21 @@ service cloud.firestore {
             && data.fontScaleLevel <= 3);
     }
 
-    function favoriteOk(data) {
-      return !('favorite' in data) || data.favorite is bool;
+    function notificationsEnabledOk(data) {
+      return !('notificationsEnabled' in data)
+        || data.notificationsEnabled is bool;
+    }
+
+    function pushTokensOk(data) {
+      return !('pushTokens' in data) || data.pushTokens is list;
+    }
+
+    function activityTypeOk(t) {
+      return t in [
+        'list_created', 'list_renamed', 'list_archived', 'list_deleted',
+        'item_added', 'items_added', 'item_checked', 'item_unchecked',
+        'item_deleted', 'items_cleared'
+      ];
     }
 
     // Felhasználói profil: mindenki csak a sajátját éri el.
@@ -46,7 +59,9 @@ service cloud.firestore {
         && request.auth.uid == userId
         && strLen(request.resource.data.displayName, 1, 100)
         && fontScaleOk(request.resource.data)
-        && localeOk(request.resource.data);
+        && localeOk(request.resource.data)
+        && pushTokensOk(request.resource.data)
+        && notificationsEnabledOk(request.resource.data);
       allow delete: if false;
     }
 
@@ -140,6 +155,21 @@ service cloud.firestore {
           && favoriteOk(request.resource.data);
         allow delete: if isMemberOf(householdId);
       }
+
+      // ---- Push értesítés aktivitás (csak írás, Cloud Functions olvassa) ----
+      match /activity/{activityId} {
+        allow create: if isMemberOf(householdId)
+          && request.resource.data.actorUid == request.auth.uid
+          && strLen(request.resource.data.actorName, 1, 100)
+          && strLen(request.resource.data.listName, 1, 100)
+          && activityTypeOk(request.resource.data.type);
+        allow read, update, delete: if false;
+      }
+    }
+
+    // Összefoglaló push sor – kizárólag Cloud Functions.
+    match /pushBatchQueue/{householdId} {
+      allow read, write: if false;
     }
   }
 }

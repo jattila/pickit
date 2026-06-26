@@ -174,6 +174,11 @@ export const de: TranslationTree = {
     notVerifiedHint: "Klicke den Link in der E-Mail und versuche es erneut.",
     fontSize: "Schriftgröße",
     fontSizeNote: "Diese Einstellung gilt nur für dich und wird auf allen Geräten synchronisiert.",
+    pushNotifications: "Push-Benachrichtigungen",
+    pushNotificationsHint:
+      "Andere Familienmitglieder erhalten eine zusammengefasste Benachrichtigung über Listenänderungen (nach ca. 3 Minuten).",
+    pushNotificationsDenied:
+      "Benachrichtigungen sind auf diesem Gerät deaktiviert. Aktiviere sie in den Systemeinstellungen.",
     family: "Haushalt",
     inviteCode: "Einladungscode",
     inviteVerifyRequired: "Bestätige deine E-Mail, bevor du den Einladungscode teilst.",

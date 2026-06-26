@@ -28,7 +28,7 @@ import { useTranslation } from "../../src/context/LocaleContext";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function ListsScreen() {
-  const { user, profile, household } = useAuth();
+  const { user, profile, household, displayName } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
   const [lists, setLists] = useState<ShoppingList[] | null>(null);
@@ -51,7 +51,7 @@ export default function ListsScreen() {
   const handleCreate = async (name: string) => {
     if (!householdId || !user) return;
     setShowCreate(false);
-    const id = await createList(householdId, user.uid, name);
+    const id = await createList(householdId, user.uid, name, displayName);
     router.push({ pathname: "/list/[id]", params: { id, name } });
   };
 
@@ -61,7 +61,7 @@ export default function ListsScreen() {
       {
         text: t("common.delete"),
         style: "destructive",
-        onPress: () => householdId && deleteList(householdId, list.id),
+        onPress: () => householdId && deleteList(householdId, list.id, { uid: user!.uid, name: displayName }),
       },
     ]);
   };
@@ -71,7 +71,7 @@ export default function ListsScreen() {
       { text: t("listDetail.menuRename"), onPress: () => setRenamingList(list) },
       {
         text: t("listDetail.menuArchive"),
-        onPress: () => householdId && setListArchived(householdId, list.id, true),
+        onPress: () => householdId && setListArchived(householdId, list.id, true, { uid: user!.uid, name: displayName }),
       },
       {
         text: t("listDetail.menuDelete"),
@@ -87,7 +87,7 @@ export default function ListsScreen() {
     const listId = renamingList.id;
     setRenamingList(null);
     try {
-      await renameList(householdId, listId, newName);
+      await renameList(householdId, listId, newName, { uid: user!.uid, name: displayName });
     } catch (err) {
       Alert.alert(
         t("listDetail.renameFailed"),

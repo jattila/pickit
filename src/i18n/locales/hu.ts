@@ -177,6 +177,11 @@ export const hu = {
     notVerifiedHint: "Kattints a levélben lévő linkre, majd próbáld újra.",
     fontSize: "Betűméret",
     fontSizeNote: "A beállítás csak neked vonatkozik, és minden eszközön szinkronban marad.",
+    pushNotifications: "Push értesítések",
+    pushNotificationsHint:
+      "A család többi tagja összefoglaló értesítést kap a listaváltozásokról (kb. 3 perc után, egyben).",
+    pushNotificationsDenied:
+      "Az értesítések ki vannak kapcsolva az eszközön. Engedélyezd a rendszerbeállításokban.",
     family: "Család",
     inviteCode: "Meghívó kód",
     inviteVerifyRequired:

@@ -6,12 +6,18 @@ import {
   Pressable,
   Share,
   Alert,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { leaveHousehold } from "../../src/lib/firestore";
+import {
+  clearPushTokens,
+  registerForPushNotifications,
+  setNotificationsEnabled,
+} from "../../src/lib/pushNotifications";
 import { Card, Button } from "../../src/components/ui";
 import { LinkAccountModal } from "../../src/components/LinkAccountModal";
 import { humanizeAuthError } from "../../src/lib/authErrors";
@@ -43,6 +49,22 @@ export default function SettingsScreen() {
     useFontScale();
   const { t, locale, setLocale, supportedLocales, localeLabel } = useTranslation();
   const styles = useStyles();
+
+  const notificationsOn = profile?.notificationsEnabled !== false;
+
+  const handleNotificationsToggle = async (value: boolean) => {
+    if (!user) return;
+    await setNotificationsEnabled(user.uid, value);
+    if (value) {
+      const ok = await registerForPushNotifications(user.uid);
+      if (!ok) {
+        Alert.alert(t("common.error"), t("settings.pushNotificationsDenied"));
+        await setNotificationsEnabled(user.uid, false);
+      }
+    } else {
+      await clearPushTokens(user.uid);
+    }
+  };
 
   if (profile && !profile.householdId) {
     return <Redirect href="/setup" />;
@@ -214,6 +236,19 @@ export default function SettingsScreen() {
         </Card>
 
         <Card style={{ gap: spacing.sm }}>
+          <View style={styles.switchRow}>
+            <Text style={styles.label}>{t("settings.pushNotifications")}</Text>
+            <Switch
+              value={notificationsOn}
+              onValueChange={handleNotificationsToggle}
+              trackColor={{ false: colors.border, true: colors.primarySoft }}
+              thumbColor={notificationsOn ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={styles.note}>{t("settings.pushNotificationsHint")}</Text>
+        </Card>
+
+        <Card style={{ gap: spacing.sm }}>
           <Text style={styles.label}>{t("settings.family")}</Text>
           <Text style={styles.value}>{household?.name}</Text>
 
@@ -325,6 +360,12 @@ function useStyles() {
     langBtnActive: { backgroundColor: colors.primarySoft },
     langBtnText: { fontSize: fs(13), fontWeight: "600", color: colors.textMuted },
     langBtnTextActive: { color: colors.primaryDark, fontWeight: "700" },
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
     codeBox: {
       backgroundColor: colors.primarySoft,
       borderRadius: radius.md,

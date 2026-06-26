@@ -174,6 +174,11 @@ export const en: TranslationTree = {
     notVerifiedHint: "Click the link in the email, then try again.",
     fontSize: "Font size",
     fontSizeNote: "This setting applies only to you and stays in sync on all your devices.",
+    pushNotifications: "Push notifications",
+    pushNotificationsHint:
+      "Other household members get a summarized notification about list changes (after ~3 minutes, batched).",
+    pushNotificationsDenied:
+      "Notifications are disabled on this device. Enable them in system settings.",
     family: "Household",
     inviteCode: "Invite code",
     inviteVerifyRequired: "Verify your email before sharing the invite code.",

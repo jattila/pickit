@@ -264,6 +264,45 @@ import { Sentry } from "../src/sentry/sentry";
 Sentry.captureException(error);
 ```
 
+## Push értesítések (családtagoknak, összefoglalva)
+
+Ha valaki módosít egy listát, a többi tag **kb. 3 perc után** egy összefoglaló
+push üzenetet kap (nem minden egyes koppintásra külön). Példa: *„Jani: 3 új tétel,
+2 megvásárolva · Heti nagybevásárlás”*.
+
+### App oldal
+
+- A Beállításokban kapcsolható a push értesítés.
+- **Expo Go-ban nem működik** – EAS build kell (preview/production profil).
+- Az első indításkor az app engedélyt kér az értesítésekre.
+
+### Cloud Functions telepítése
+
+1. Telepítsd a Firebase CLI-t és jelentkezz be:
+   ```bash
+   npm i -g firebase-tools
+   firebase login
+   firebase use <a-firebase-projekt-id>
+   ```
+2. (Ajánlott) Expo access token a megbízható push küldéshez:
+   ```bash
+   firebase functions:secrets:set EXPO_ACCESS_TOKEN
+   ```
+   Az tokent az [expo.dev](https://expo.dev) → Access Tokens menüben hozod létre.
+3. Telepítsd a szabályokat és a függvényeket:
+   ```bash
+   firebase deploy --only firestore:rules,functions
+   ```
+4. Az első futáskor a Firebase Console kérhet **Firestore indexet** a
+   `pushBatchQueue` lekérdezéshez (`sent` + `sendAfter`) – a linken engedélyezd.
+
+### Működés
+
+1. A kliens minden listaváltozáskor egy `activity` dokumentumot ír.
+2. A `onHouseholdActivity` függvény 3 perces debounce-szal sorba rakja az eseményeket.
+3. A `flushPushBatches` percenként elküldi az összefoglalót a többi tag Expo push
+   tokenjeire (a módosító nem kap értesítést a saját változásairól).
+
 ## App Check (b) pont – még hátravan)
 
 Az App Check biztosítja, hogy **csak a hivatalos appodból** érkező kérések érjék
