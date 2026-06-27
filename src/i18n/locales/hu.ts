@@ -191,6 +191,15 @@ export const hu = {
     inviteNote:
       "Oszd meg ezt a kódot a családtagjaiddal. Ha beírják a „Csatlakozás” képernyőn, máris közösen használhatjátok a listákat – valós időben.",
     members: "Tagok ({{count}})",
+    memberSuspended: "Felfüggesztve",
+    suspendMember: "Felfüggesztés",
+    reactivateMember: "Aktiválás",
+    suspendMemberTitle: "Tag felfüggesztése?",
+    suspendMemberBody:
+      "{{name}} nem fogja látni és módosítani a család listáit, amíg újra nem aktiválod. A fiókja megmarad.",
+    reactivateMemberTitle: "Tag újraaktiválása?",
+    reactivateMemberBody: "{{name}} ismét hozzáfér a család listáihoz.",
+    suspendHint: "Csak a családot létrehozó függeszthet fel tagot. A felfüggesztés visszavonható.",
     accountActions: "Fiók műveletek",
     leaveHousehold: "Kilépés a családból",
     signOut: "Kijelentkezés",
@@ -207,6 +216,12 @@ export const hu = {
     linkAccountSuccessTitle: "Fiók létrehozva",
     linkAccountSuccessBody:
       "Mostantól az e-mailedddel is be tudsz lépni. Küldtünk egy megerősítő levelet – ha nem találod, nézd meg a levélszemét (spam) mappát is.",
+  },
+  suspended: {
+    title: "Hozzáférés felfüggesztve",
+    subtitle: "A család adminisztrátora ideiglenesen korlátozta a hozzáférésed.",
+    note:
+      "A(z) „{{name}}” család listáit jelenleg nem éred el. Ha úgy gondolod, tévedés történt, vedd fel a kapcsolatot a család létrehozójával, vagy lépj ki a családból.",
   },
   linkAccount: {
     title: "Fiók létrehozása",

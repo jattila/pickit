@@ -2,6 +2,7 @@ import React from "react";
 import { Text } from "react-native";
 import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
+import { isMemberSuspended } from "../../src/lib/household";
 import { useFontScale } from "../../src/context/FontScaleContext";
 import { useTranslation } from "../../src/context/LocaleContext";
 import { colors } from "../../src/theme";
@@ -12,12 +13,16 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
-  const { user } = useAuth();
+  const { user, profile, household } = useAuth();
   const { scale: fs } = useFontScale();
   const { t } = useTranslation();
 
   if (!user) {
     return <Redirect href="/login" />;
+  }
+
+  if (profile?.householdId && isMemberSuspended(household, user.uid)) {
+    return <Redirect href="/suspended" />;
   }
 
   return (

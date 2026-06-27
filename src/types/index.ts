@@ -9,6 +9,8 @@ export interface Household {
   inviteCode: string;
   memberIds: ID[];
   members: Record<ID, HouseholdMember>;
+  /** Felfüggesztett tagok – továbbra is tagok, de nem érik el a listákat. */
+  suspendedMemberIds?: ID[];
   createdAt?: Timestamp;
   createdBy: ID;
 }
@@ -16,6 +18,7 @@ export interface Household {
 export interface HouseholdMember {
   uid: ID;
   displayName: string;
+  email?: string | null;
   joinedAt?: Timestamp;
 }
 

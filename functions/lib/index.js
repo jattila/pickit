@@ -40,10 +40,14 @@ const scheduler_1 = require("firebase-functions/v2/scheduler");
 const firebase_functions_1 = require("firebase-functions");
 const summary_1 = require("./summary");
 admin.initializeApp();
+admin.firestore().settings({ ignoreUndefinedProperties: true });
 const db = admin.firestore();
 const DEBOUNCE_MS = 3 * 60 * 1000;
 /** Egy activity esemény → összefoglaló sorba, 3 perc debounce. */
-exports.onHouseholdActivity = (0, firestore_1.onDocumentCreated)("households/{householdId}/activity/{activityId}", async (event) => {
+exports.onHouseholdActivity = (0, firestore_1.onDocumentCreated)({
+    document: "households/{householdId}/activity/{activityId}",
+    region: "europe-central2",
+}, async (event) => {
     const householdId = event.params.householdId;
     const data = event.data?.data();
     if (!data)
@@ -99,10 +103,22 @@ async function sendExpoPush(tokens, title, body, data) {
     if (!res.ok) {
         const text = await res.text();
         firebase_functions_1.logger.error("Expo push failed", { status: res.status, text });
+        return;
+    }
+    const result = await res.json();
+    const errors = (result.data ?? []).filter((r) => r.status === "error");
+    if (errors.length > 0) {
+        firebase_functions_1.logger.error("Expo push ticket errors", { errors });
+    }
+    else {
+        firebase_functions_1.logger.info("Expo push sent", { count: tokens.length, title });
     }
 }
 /** Percenként: lejárt batch-ek összefoglaló push küldése. */
-exports.flushPushBatches = (0, scheduler_1.onSchedule)("every 1 minutes", async () => {
+exports.flushPushBatches = (0, scheduler_1.onSchedule)({
+    schedule: "every 1 minutes",
+    region: "europe-central2",
+}, async () => {
     const now = admin.firestore.Timestamp.now();
     const pending = await db
         .collection("pushBatchQueue")
@@ -143,6 +159,11 @@ exports.flushPushBatches = (0, scheduler_1.onSchedule)("every 1 minutes", async 
             const list = tokensByLocale.get(locale) ?? [];
             list.push(...tokens);
             tokensByLocale.set(locale, list);
+        }
+        if (tokensByLocale.size === 0) {
+            firebase_functions_1.logger.warn("No push tokens for recipients", { householdId, recipientIds });
+            await batchSnap.ref.delete();
+            continue;
         }
         for (const [locale, tokens] of tokensByLocale) {
             const uniqueTokens = [...new Set(tokens)];

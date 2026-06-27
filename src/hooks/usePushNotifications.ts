@@ -1,26 +1,27 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { registerForPushNotifications } from "../lib/pushNotifications";
 
 /** Push token regisztráció háztartás tagoknak (ha engedélyezve). */
 export function usePushNotifications() {
   const { user, profile } = useAuth();
-  const registeredRef = useRef(false);
 
   useEffect(() => {
     const uid = user?.uid;
     const householdId = profile?.householdId;
     const enabled = profile?.notificationsEnabled !== false;
 
-    if (!uid || !householdId || !enabled) {
-      registeredRef.current = false;
-      return;
-    }
+    if (!uid || !householdId || !enabled) return;
 
-    if (registeredRef.current) return;
+    const sync = () => {
+      void registerForPushNotifications(uid);
+    };
 
-    void registerForPushNotifications(uid).then((ok) => {
-      registeredRef.current = ok;
+    sync();
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") sync();
     });
+    return () => sub.remove();
   }, [user?.uid, profile?.householdId, profile?.notificationsEnabled]);
 }

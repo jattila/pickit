@@ -187,6 +187,15 @@ export const en: TranslationTree = {
     inviteNote:
       "Share this code with family members. They can enter it on the Join screen to use lists together in real time.",
     members: "Members ({{count}})",
+    memberSuspended: "Suspended",
+    suspendMember: "Suspend",
+    reactivateMember: "Reactivate",
+    suspendMemberTitle: "Suspend member?",
+    suspendMemberBody:
+      "{{name}} won't be able to view or edit household lists until you reactivate them. Their account is kept.",
+    reactivateMemberTitle: "Reactivate member?",
+    reactivateMemberBody: "{{name}} will regain access to household lists.",
+    suspendHint: "Only the household creator can suspend members. Suspension can be reversed.",
     accountActions: "Account actions",
     leaveHousehold: "Leave household",
     signOut: "Sign out",
@@ -202,6 +211,12 @@ export const en: TranslationTree = {
     linkAccountSuccessTitle: "Account created",
     linkAccountSuccessBody:
       "You can now sign in with your email. We sent a verification email – check spam if you don't see it.",
+  },
+  suspended: {
+    title: "Access suspended",
+    subtitle: "The household admin has temporarily restricted your access.",
+    note:
+      "You can't access the \"{{name}}\" household lists right now. Contact the household creator if you think this is a mistake, or leave the household.",
   },
   linkAccount: {
     title: "Create account",

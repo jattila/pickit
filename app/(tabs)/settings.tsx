@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
-import { leaveHousehold } from "../../src/lib/firestore";
+import { leaveHousehold, setMemberSuspended, getUserProfile } from "../../src/lib/firestore";
+import {
+  isHouseholdAdmin,
+  duplicateMemberNameKeys,
+  normalizeMemberName,
+  memberEmailLabel,
+} from "../../src/lib/household";
 import {
   clearPushTokens,
   registerForPushNotifications,
@@ -89,7 +95,76 @@ export default function SettingsScreen() {
   };
 
   const code = household?.inviteCode ?? "";
-  const members = household ? Object.values(household.members ?? {}) : [];
+  const members = useMemo(
+    () => (household ? Object.values(household.members ?? {}) : []),
+    [household?.members]
+  );
+  const isAdmin = isHouseholdAdmin(household, user?.uid);
+  const isSuspended = (uid: string) => (household?.suspendedMemberIds ?? []).includes(uid);
+  const duplicateNames = useMemo(() => duplicateMemberNameKeys(members), [members]);
+  const [coMemberEmails, setCoMemberEmails] = useState<Record<string, string>>({});
+
+  // Duplikált neveknél a többi tag e-mailje a profilból (ha még nincs a tagrekordban).
+  useEffect(() => {
+    if (duplicateNames.size === 0 || !user?.uid) {
+      setCoMemberEmails({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const toFetch = members.filter(
+        (m) =>
+          duplicateNames.has(normalizeMemberName(m.displayName || "?")) &&
+          m.uid !== user.uid &&
+          !m.email?.trim()
+      );
+      if (toFetch.length === 0) {
+        if (!cancelled) setCoMemberEmails({});
+        return;
+      }
+      const pairs = (
+        await Promise.all(
+          toFetch.map(async (m) => {
+            try {
+              const p = await getUserProfile(m.uid);
+              const e = p?.email?.trim();
+              return e ? ([m.uid, e] as const) : null;
+            } catch {
+              return null;
+            }
+          })
+        )
+      ).filter((x): x is readonly [string, string] => x !== null);
+      if (!cancelled) setCoMemberEmails(Object.fromEntries(pairs));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [members, duplicateNames, user?.uid]);
+
+  const confirmToggleSuspend = (memberUid: string, memberName: string, suspended: boolean) => {
+    if (!user || !household) return;
+    Alert.alert(
+      suspended ? t("settings.reactivateMemberTitle") : t("settings.suspendMemberTitle"),
+      suspended
+        ? t("settings.reactivateMemberBody", { name: memberName })
+        : t("settings.suspendMemberBody", { name: memberName }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: suspended ? t("settings.reactivateMember") : t("settings.suspendMember"),
+          style: suspended ? "default" : "destructive",
+          onPress: async () => {
+            try {
+              await setMemberSuspended(household.id, user.uid, memberUid, !suspended);
+            } catch (e: any) {
+              Alert.alert(t("common.error"), e?.message ?? t("common.unknownError"));
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const shareCode = async () => {
     try {
@@ -274,19 +349,45 @@ export default function SettingsScreen() {
 
         <Card style={{ gap: spacing.sm }}>
           <Text style={styles.label}>{t("settings.members", { count: members.length })}</Text>
-          {members.map((m) => (
-            <View key={m.uid} style={styles.member}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {(m.displayName ?? "?").charAt(0).toUpperCase()}
-                </Text>
+          {members.map((m) => {
+            const suspended = isSuspended(m.uid);
+            const showEmail = duplicateNames.has(normalizeMemberName(m.displayName || "?"));
+            const memberEmail = memberEmailLabel(m, user?.uid, email, coMemberEmails);
+            return (
+              <View key={m.uid} style={styles.member}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {(m.displayName ?? "?").charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.memberName}>
+                    {m.displayName}
+                    {showEmail && memberEmail ? (
+                      <Text style={styles.memberEmail}> ({memberEmail})</Text>
+                    ) : null}
+                    {m.uid === user?.uid ? (
+                      <Text style={styles.memberYou}> ({t("common.you")})</Text>
+                    ) : null}
+                  </Text>
+                  {suspended ? (
+                    <Text style={styles.memberSuspended}>{t("settings.memberSuspended")}</Text>
+                  ) : null}
+                </View>
+                {isAdmin && m.uid !== user?.uid ? (
+                  <Pressable
+                    onPress={() => confirmToggleSuspend(m.uid, m.displayName, suspended)}
+                    hitSlop={8}
+                  >
+                    <Text style={[styles.memberAction, suspended && styles.memberActionActive]}>
+                      {suspended ? t("settings.reactivateMember") : t("settings.suspendMember")}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
-              <Text style={styles.memberName}>
-                {m.displayName}
-                {m.uid === user?.uid ? `  (${t("common.you")})` : ""}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
+          {isAdmin ? <Text style={styles.note}>{t("settings.suspendHint")}</Text> : null}
         </Card>
 
         <Card style={{ gap: spacing.sm, marginTop: spacing.md }}>
@@ -392,5 +493,10 @@ function useStyles() {
     },
     avatarText: { color: colors.white, fontWeight: "800", fontSize: fs(16) },
     memberName: { fontSize: fs(16), color: colors.text, fontWeight: "500" },
+    memberEmail: { fontSize: fs(14), color: colors.textMuted, fontWeight: "400" },
+    memberYou: { fontSize: fs(14), color: colors.textMuted, fontWeight: "500" },
+    memberSuspended: { fontSize: fs(12), color: colors.accent, fontWeight: "600", marginTop: 2 },
+    memberAction: { fontSize: fs(13), fontWeight: "700", color: colors.danger },
+    memberActionActive: { color: colors.primary },
   }));
 }

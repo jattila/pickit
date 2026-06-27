@@ -31,6 +31,15 @@ export async function requestPushPermissions(): Promise<boolean> {
 export async function getExpoPushToken(): Promise<string | null> {
   if (!Device.isDevice) return null;
 
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "PickIt",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#2E7D5B",
+    });
+  }
+
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
     Constants.easConfig?.projectId;

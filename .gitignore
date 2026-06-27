@@ -35,6 +35,10 @@ yarn-error.*
 .env*.local
 !.env.example
 
+# Firebase admin keys (never commit)
+pickit-admin-key.json
+*-firebase-adminsdk*.json
+
 # typescript
 *.tsbuildinfo
 

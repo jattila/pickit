@@ -18,7 +18,7 @@ import { useScaledStyleSheet } from "../src/theme/useScaledStyleSheet";
 type Mode = "create" | "join";
 
 export default function Setup() {
-  const { user, displayName, requiresVerification, reloadUser, signOut } = useAuth();
+  const { user, displayName, requiresVerification, reloadUser, signOut, email } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("create");
@@ -57,12 +57,12 @@ export default function Setup() {
     try {
       if (mode === "create") {
         if (!householdName.trim()) throw new Error(t("setup.errHouseholdName"));
-        await createHousehold(user.uid, displayName, householdName.trim());
+        await createHousehold(user.uid, displayName, householdName.trim(), email);
       } else {
         if (!code.trim()) throw new Error(t("setup.errInviteCode"));
         const verified = await reloadUser();
         if (!verified) throw new Error(t("setup.errVerifyRequired"));
-        await joinHousehold(user.uid, displayName, code.trim());
+        await joinHousehold(user.uid, displayName, code.trim(), email);
       }
       router.replace("/(tabs)");
     } catch (e: any) {

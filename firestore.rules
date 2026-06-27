@@ -18,6 +18,17 @@ service cloud.firestore {
            get(/databases/$(database)/documents/households/$(householdId)).data.memberIds;
     }
 
+    // Aktív tag: benne van a memberIds-ben és nincs felfüggesztve.
+    function isActiveMemberOf(householdId) {
+      return isMemberOf(householdId)
+        && !(request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.get('suspendedMemberIds', []));
+    }
+
+    function isHouseholdCreator(householdId) {
+      return isMemberOf(householdId)
+        && get(/databases/$(database)/documents/households/$(householdId)).data.createdBy == request.auth.uid;
+    }
+
     // Sztring típus + hosszellenőrzés.
     function strLen(v, minLen, maxLen) {
       return v is string && v.size() >= minLen && v.size() <= maxLen;
@@ -40,6 +51,17 @@ service cloud.firestore {
         || data.notificationsEnabled is bool;
     }
 
+    function emailOk(data) {
+      return !('email' in data) || strLen(data.email, 5, 320);
+    }
+
+    // Ugyanabban a családban vannak (pl. duplikált név megkülönböztetéséhez).
+    function sharesHouseholdWith(otherUserId) {
+      let myHouseholdId = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('householdId', null);
+      let otherHouseholdId = get(/databases/$(database)/documents/users/$(otherUserId)).data.get('householdId', null);
+      return myHouseholdId != null && myHouseholdId == otherHouseholdId;
+    }
+
     function pushTokensOk(data) {
       return !('pushTokens' in data) || data.pushTokens is list;
     }
@@ -52,16 +74,22 @@ service cloud.firestore {
       ];
     }
 
-    // Felhasználói profil: mindenki csak a sajátját éri el.
+    function favoriteOk(data) {
+      return !('favorite' in data) || data.favorite is bool;
+    }
+
+    // Felhasználói profil: saját + ugyanazon család tagjainak olvasása.
     match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn()
+        && (request.auth.uid == userId || sharesHouseholdWith(userId));
       allow create, update: if signedIn()
         && request.auth.uid == userId
         && strLen(request.resource.data.displayName, 1, 100)
         && fontScaleOk(request.resource.data)
         && localeOk(request.resource.data)
         && pushTokensOk(request.resource.data)
-        && notificationsEnabledOk(request.resource.data);
+        && notificationsEnabledOk(request.resource.data)
+        && emailOk(request.resource.data);
       allow delete: if false;
     }
 
@@ -72,9 +100,9 @@ service cloud.firestore {
     match /inviteCodes/{code} {
       allow read: if signedIn();
       allow create: if signedIn()
-        && isMemberOf(request.resource.data.householdId);
+        && isActiveMemberOf(request.resource.data.householdId);
       allow update, delete: if signedIn()
-        && isMemberOf(resource.data.householdId);
+        && isActiveMemberOf(resource.data.householdId);
     }
 
     // Háztartás: kizárólag a tagjai olvashatják/írhatják.
@@ -89,7 +117,7 @@ service cloud.firestore {
 
       allow update: if
         // a) meglévő tag módosít (átnevezés, kilépés) – de a kulcsmezők nem változhatnak
-        (isMemberOf(householdId)
+        (isActiveMemberOf(householdId)
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.inviteCode == resource.data.inviteCode)
         ||
@@ -101,25 +129,45 @@ service cloud.firestore {
           && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
           && request.resource.data.name == resource.data.name
           && request.resource.data.createdBy == resource.data.createdBy
-          && request.resource.data.inviteCode == resource.data.inviteCode);
+          && request.resource.data.inviteCode == resource.data.inviteCode)
+        ||
+        // c) létrehozó felfüggeszt / újraaktivál tagot
+        (isHouseholdCreator(householdId)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.inviteCode == resource.data.inviteCode
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.memberIds == resource.data.memberIds
+          && request.resource.data.members == resource.data.members
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['suspendedMemberIds'])
+          && !(request.auth.uid in request.resource.data.get('suspendedMemberIds', [])))
+        ||
+        // d) tag kilép – saját magát távolítja el (felfüggesztett is)
+        (isMemberOf(householdId)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.inviteCode == resource.data.inviteCode
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+          && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+          && !(request.auth.uid in request.resource.data.memberIds)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members', 'suspendedMemberIds']));
 
-      allow delete: if isMemberOf(householdId);
+      allow delete: if isActiveMemberOf(householdId);
 
       // ---- Listák ----
       match /lists/{listId} {
-        allow read: if isMemberOf(householdId);
-        allow create, update: if isMemberOf(householdId)
+        allow read: if isActiveMemberOf(householdId);
+        allow create, update: if isActiveMemberOf(householdId)
           && strLen(request.resource.data.name, 1, 100)
           && request.resource.data.archived is bool
           && request.resource.data.itemCount is number
           && request.resource.data.checkedCount is number;
-        allow delete: if isMemberOf(householdId);
+        allow delete: if isActiveMemberOf(householdId);
 
         // ---- Tételek ----
         match /items/{itemId} {
-          allow read: if isMemberOf(householdId);
+          allow read: if isActiveMemberOf(householdId);
 
-          allow create: if isMemberOf(householdId)
+          allow create: if isActiveMemberOf(householdId)
             && strLen(request.resource.data.name, 1, 100)
             && strLen(request.resource.data.quantity, 0, 50)
             && strLen(request.resource.data.category, 0, 50)
@@ -129,7 +177,7 @@ service cloud.firestore {
             && request.resource.data.checked == false
             && request.resource.data.checkedBy == null;
 
-          allow update: if isMemberOf(householdId)
+          allow update: if isActiveMemberOf(householdId)
             && strLen(request.resource.data.name, 1, 100)
             && strLen(request.resource.data.quantity, 0, 50)
             && strLen(request.resource.data.category, 0, 50)
@@ -142,23 +190,23 @@ service cloud.firestore {
                 || request.resource.data.checkedBy == null
                 || request.resource.data.checkedBy == request.auth.uid);
 
-          allow delete: if isMemberOf(householdId);
+          allow delete: if isActiveMemberOf(householdId);
         }
       }
 
       // ---- Katalógus (korábbi tételek) ----
       match /catalog/{catalogId} {
-        allow read: if isMemberOf(householdId);
-        allow create, update: if isMemberOf(householdId)
+        allow read: if isActiveMemberOf(householdId);
+        allow create, update: if isActiveMemberOf(householdId)
           && strLen(request.resource.data.name, 1, 100)
           && request.resource.data.useCount is number
           && favoriteOk(request.resource.data);
-        allow delete: if isMemberOf(householdId);
+        allow delete: if isActiveMemberOf(householdId);
       }
 
       // ---- Push értesítés aktivitás (csak írás, Cloud Functions olvassa) ----
       match /activity/{activityId} {
-        allow create: if isMemberOf(householdId)
+        allow create: if isActiveMemberOf(householdId)
           && request.resource.data.actorUid == request.auth.uid
           && strLen(request.resource.data.actorName, 1, 100)
           && strLen(request.resource.data.listName, 1, 100)

@@ -187,6 +187,15 @@ export const de: TranslationTree = {
     inviteNote:
       "Teile diesen Code mit Familienmitgliedern. Sie können ihn auf dem Beitreten-Bildschirm eingeben und Listen in Echtzeit gemeinsam nutzen.",
     members: "Mitglieder ({{count}})",
+    memberSuspended: "Gesperrt",
+    suspendMember: "Sperren",
+    reactivateMember: "Aktivieren",
+    suspendMemberTitle: "Mitglied sperren?",
+    suspendMemberBody:
+      "{{name}} kann die Haushaltslisten nicht sehen oder bearbeiten, bis du das rückgängig machst. Das Konto bleibt erhalten.",
+    reactivateMemberTitle: "Mitglied reaktivieren?",
+    reactivateMemberBody: "{{name}} erhält wieder Zugriff auf die Haushaltslisten.",
+    suspendHint: "Nur der Ersteller kann Mitglieder sperren. Die Sperre ist rückgängig zu machen.",
     accountActions: "Kontoaktionen",
     leaveHousehold: "Haushalt verlassen",
     signOut: "Abmelden",
@@ -202,6 +211,12 @@ export const de: TranslationTree = {
     linkAccountSuccessTitle: "Konto erstellt",
     linkAccountSuccessBody:
       "Du kannst dich jetzt mit deiner E-Mail anmelden. Wir haben eine Bestätigungs-E-Mail gesendet – prüfe auch den Spam-Ordner.",
+  },
+  suspended: {
+    title: "Zugriff gesperrt",
+    subtitle: "Der Haushalts-Administrator hat deinen Zugriff vorübergehend eingeschränkt.",
+    note:
+      "Du kannst derzeit nicht auf die Listen von „{{name}}“ zugreifen. Wende dich an den Ersteller, wenn du glaubst, dass es ein Fehler ist, oder verlasse den Haushalt.",
   },
   linkAccount: {
     title: "Konto erstellen",

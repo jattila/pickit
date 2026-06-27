@@ -9,6 +9,7 @@ import {
 } from "./summary";
 
 admin.initializeApp();
+admin.firestore().settings({ ignoreUndefinedProperties: true });
 
 const db = admin.firestore();
 const DEBOUNCE_MS = 3 * 60 * 1000;
@@ -23,7 +24,10 @@ interface PushBatchDoc {
 
 /** Egy activity esemény → összefoglaló sorba, 3 perc debounce. */
 export const onHouseholdActivity = onDocumentCreated(
-  "households/{householdId}/activity/{activityId}",
+  {
+    document: "households/{householdId}/activity/{activityId}",
+    region: "europe-central2",
+  },
   async (event) => {
     const householdId = event.params.householdId;
     const data = event.data?.data();
@@ -93,11 +97,24 @@ async function sendExpoPush(
   if (!res.ok) {
     const text = await res.text();
     logger.error("Expo push failed", { status: res.status, text });
+    return;
+  }
+  const result = await res.json();
+  const errors = (result.data ?? []).filter((r: { status?: string }) => r.status === "error");
+  if (errors.length > 0) {
+    logger.error("Expo push ticket errors", { errors });
+  } else {
+    logger.info("Expo push sent", { count: tokens.length, title });
   }
 }
 
 /** Percenként: lejárt batch-ek összefoglaló push küldése. */
-export const flushPushBatches = onSchedule("every 1 minutes", async () => {
+export const flushPushBatches = onSchedule(
+  {
+    schedule: "every 1 minutes",
+    region: "europe-central2",
+  },
+  async () => {
   const now = admin.firestore.Timestamp.now();
   const pending = await db
     .collection("pushBatchQueue")
@@ -121,7 +138,10 @@ export const flushPushBatches = onSchedule("every 1 minutes", async () => {
     }
 
     const memberIds = (householdSnap.data()?.memberIds ?? []) as string[];
-    const recipientIds = memberIds.filter((uid) => !actorUids.includes(uid));
+    const suspended = (householdSnap.data()?.suspendedMemberIds ?? []) as string[];
+    const recipientIds = memberIds.filter(
+      (uid) => !actorUids.includes(uid) && !suspended.includes(uid)
+    );
     if (recipientIds.length === 0) {
       await batchSnap.ref.delete();
       continue;
@@ -141,6 +161,12 @@ export const flushPushBatches = onSchedule("every 1 minutes", async () => {
       tokensByLocale.set(locale, list);
     }
 
+    if (tokensByLocale.size === 0) {
+      logger.warn("No push tokens for recipients", { householdId, recipientIds });
+      await batchSnap.ref.delete();
+      continue;
+    }
+
     for (const [locale, tokens] of tokensByLocale) {
       const uniqueTokens = [...new Set(tokens)];
       const { title, body } = buildNotification(locale as "hu" | "en" | "de", events);
@@ -152,4 +178,5 @@ export const flushPushBatches = onSchedule("every 1 minutes", async () => {
 
     await batchSnap.ref.delete();
   }
-});
+  }
+);

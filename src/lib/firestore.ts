@@ -54,6 +54,7 @@ export interface UserProfile {
   uid: ID;
   displayName: string;
   householdId: ID | null;
+  email?: string | null;
   fontScaleLevel?: number;
   locale?: AppLocale;
   pushTokens?: string[];
@@ -117,13 +118,29 @@ async function reserveInviteCode(): Promise<string> {
   return generateInviteCode() + generateInviteCode().slice(0, 2);
 }
 
+function memberRecord(
+  uid: ID,
+  displayName: string,
+  email?: string | null
+): Record<string, unknown> {
+  const member: Record<string, unknown> = {
+    uid,
+    displayName,
+    joinedAt: serverTimestamp(),
+  };
+  const normalizedEmail = email?.trim();
+  if (normalizedEmail) member.email = normalizedEmail;
+  return member;
+}
+
 export async function createHousehold(
   uid: ID,
   displayName: string,
-  householdName: string
+  householdName: string,
+  email?: string | null
 ): Promise<ID> {
   const inviteCode = await reserveInviteCode();
-  const member = { uid, displayName, joinedAt: serverTimestamp() };
+  const member = memberRecord(uid, displayName, email);
   const householdRef = doc(collection(db, "households"));
 
   // 1) Háztartás + saját profil atomikusan.
@@ -133,6 +150,7 @@ export async function createHousehold(
     inviteCode,
     memberIds: [uid],
     members: { [uid]: member },
+    suspendedMemberIds: [],
     createdBy: uid,
     createdAt: serverTimestamp(),
   });
@@ -156,7 +174,8 @@ export async function createHousehold(
 export async function joinHousehold(
   uid: ID,
   displayName: string,
-  inviteCode: string
+  inviteCode: string,
+  email?: string | null
 ): Promise<ID> {
   const code = inviteCode.trim().toUpperCase();
 
@@ -169,7 +188,7 @@ export async function joinHousehold(
     throw new Error("Érvénytelen meghívó kód.");
   }
 
-  const member = { uid, displayName, joinedAt: serverTimestamp() };
+  const member = memberRecord(uid, displayName, email);
 
   // Felvesszük magunkat a háztartásba, és beállítjuk a profilunkat – atomikusan.
   const batch = writeBatch(db);
@@ -192,8 +211,65 @@ export async function leaveHousehold(uid: ID, householdId: ID): Promise<void> {
   batch.update(doc(db, "households", householdId), {
     [`members.${uid}`]: deleteField(),
     memberIds: arrayRemove(uid),
+    suspendedMemberIds: arrayRemove(uid),
   });
   batch.update(doc(db, "users", uid), { householdId: null });
+  await batch.commit();
+}
+
+/** Család létrehozója felfüggesztheti / újraaktiválhatja a tagot (nem törli). */
+export async function setMemberSuspended(
+  householdId: ID,
+  actorUid: ID,
+  targetUid: ID,
+  suspended: boolean
+): Promise<void> {
+  const householdRef = doc(db, "households", householdId);
+  const snap = await getDoc(householdRef);
+  if (!snap.exists()) throw new Error("A család nem található.");
+  const data = snap.data();
+  if (data.createdBy !== actorUid) {
+    throw new Error("Csak a család létrehozója függeszthet fel tagot.");
+  }
+  if (targetUid === actorUid) {
+    throw new Error("Saját magadat nem függesztheted fel.");
+  }
+  if (!(data.memberIds ?? []).includes(targetUid)) {
+    throw new Error("A felhasználó nem tagja ennek a családnak.");
+  }
+  await updateDoc(householdRef, {
+    suspendedMemberIds: suspended ? arrayUnion(targetUid) : arrayRemove(targetUid),
+  });
+}
+
+/** Saját e-mail cím szinkronizálása a család taglistájában (megkülönböztetéshez). */
+export async function updateMemberEmail(
+  householdId: ID,
+  uid: ID,
+  email: string | null | undefined
+): Promise<void> {
+  const normalized = email?.trim();
+  if (!normalized) return;
+  await updateDoc(doc(db, "households", householdId), {
+    [`members.${uid}.email`]: normalized,
+  });
+}
+
+/** E-mail mentése a profilba és a család tagrekordjába. */
+export async function syncUserEmail(
+  uid: ID,
+  email: string | null | undefined,
+  householdId?: ID | null
+): Promise<void> {
+  const normalized = email?.trim();
+  if (!normalized) return;
+  const batch = writeBatch(db);
+  batch.set(doc(db, "users", uid), { email: normalized }, { merge: true });
+  if (householdId) {
+    batch.update(doc(db, "households", householdId), {
+      [`members.${uid}.email`]: normalized,
+    });
+  }
   await batch.commit();
 }
 

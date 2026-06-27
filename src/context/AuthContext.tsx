@@ -27,6 +27,8 @@ import {
   ensureUserProfile,
   subscribeUserProfile,
   subscribeHousehold,
+  getUserProfile,
+  syncUserEmail,
   UserProfile,
 } from "../lib/firestore";
 import { humanizeAuthError } from "../lib/authErrors";
@@ -149,6 +151,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cred.user.uid,
       cred.user.displayName || email.trim()
     );
+    const p = await getUserProfile(cred.user.uid);
+    if (p?.householdId && cred.user.email) {
+      void syncUserEmail(cred.user.uid, cred.user.email, p.householdId);
+    }
   };
 
   const linkEmail = async (name: string, email: string, password: string) => {
@@ -158,6 +164,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await linkWithCredential(current, credential);
     if (name) await updateProfile(result.user, { displayName: name });
     await ensureUserProfile(result.user.uid, name || result.user.displayName || email.trim());
+    const profile = await getUserProfile(result.user.uid);
+    if (profile?.householdId) {
+      void syncUserEmail(result.user.uid, email.trim(), profile.householdId);
+    }
     setVerificationError(null);
     try {
       await sendEmailVerification(result.user);
@@ -231,6 +241,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const email = user?.email ?? null;
   // E-maillel regisztrált, de még meg nem erősített fiók (anonimot nem érint).
   const requiresVerification = !!user && !isAnonymous && !emailVerified;
+
+  // E-mail szinkron a profilba és a család taglistájába (duplikált nevek megkülönböztetéséhez).
+  useEffect(() => {
+    if (!user?.uid || user.isAnonymous || !email?.trim() || !profile?.householdId) return;
+    const stored = household?.members?.[user.uid]?.email?.trim();
+    if (stored === email.trim() && profile.email?.trim() === email.trim()) return;
+    void syncUserEmail(user.uid, email, profile.householdId);
+  }, [user?.uid, user?.isAnonymous, email, profile?.householdId, profile?.email, household?.members]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
