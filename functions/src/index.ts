@@ -76,6 +76,7 @@ async function sendExpoPush(
     title,
     body,
     data,
+    channelId: "default",
   }));
 
   const headers: Record<string, string> = {
@@ -172,7 +173,7 @@ export const flushPushBatches = onSchedule(
       const { title, body } = buildNotification(locale as "hu" | "en" | "de", events);
       await sendExpoPush(uniqueTokens, title, body, {
         householdId,
-        screen: "lists",
+        url: "/(tabs)",
       });
     }
 

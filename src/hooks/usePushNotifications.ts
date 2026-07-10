@@ -19,8 +19,14 @@ export function usePushNotifications() {
     };
 
     sync();
+    // Billentyűzet bezárásakor (pl. tétel hozzáadása) is „active” jön – ne regisztráljunk újra feleslegesen.
+    let lastSync = Date.now();
     const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
-      if (state === "active") sync();
+      if (state !== "active") return;
+      const now = Date.now();
+      if (now - lastSync < 60_000) return;
+      lastSync = now;
+      sync();
     });
     return () => sub.remove();
   }, [user?.uid, profile?.householdId, profile?.notificationsEnabled]);

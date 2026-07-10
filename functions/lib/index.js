@@ -85,6 +85,7 @@ async function sendExpoPush(tokens, title, body, data) {
         title,
         body,
         data,
+        channelId: "default",
     }));
     const headers = {
         Accept: "application/json",
@@ -139,7 +140,8 @@ exports.flushPushBatches = (0, scheduler_1.onSchedule)({
             continue;
         }
         const memberIds = (householdSnap.data()?.memberIds ?? []);
-        const recipientIds = memberIds.filter((uid) => !actorUids.includes(uid));
+        const suspended = (householdSnap.data()?.suspendedMemberIds ?? []);
+        const recipientIds = memberIds.filter((uid) => !actorUids.includes(uid) && !suspended.includes(uid));
         if (recipientIds.length === 0) {
             await batchSnap.ref.delete();
             continue;
@@ -170,7 +172,7 @@ exports.flushPushBatches = (0, scheduler_1.onSchedule)({
             const { title, body } = (0, summary_1.buildNotification)(locale, events);
             await sendExpoPush(uniqueTokens, title, body, {
                 householdId,
-                screen: "lists",
+                url: "/(tabs)",
             });
         }
         await batchSnap.ref.delete();

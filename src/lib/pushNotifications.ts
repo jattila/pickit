@@ -6,6 +6,13 @@ import { arrayRemove, arrayUnion, doc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { ID } from "../types";
 
+/** Expo Go nem támogatja megbízhatóan a remote push-t – token kérés feleslegesen megnyithatja az Expo dev felületet. */
+export function isRemotePushSupported(): boolean {
+  return Constants.appOwnership !== "expo";
+}
+
+let cachedPushToken: string | null = null;
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -29,7 +36,8 @@ export async function requestPushPermissions(): Promise<boolean> {
 }
 
 export async function getExpoPushToken(): Promise<string | null> {
-  if (!Device.isDevice) return null;
+  if (!Device.isDevice || !isRemotePushSupported()) return null;
+  if (cachedPushToken) return cachedPushToken;
 
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
@@ -49,7 +57,8 @@ export async function getExpoPushToken(): Promise<string | null> {
   }
 
   const token = await Notifications.getExpoPushTokenAsync({ projectId });
-  return token.data;
+  cachedPushToken = token.data;
+  return cachedPushToken;
 }
 
 export async function savePushToken(uid: ID, token: string): Promise<void> {
@@ -73,7 +82,7 @@ export async function setNotificationsEnabled(uid: ID, enabled: boolean): Promis
 }
 
 export async function registerForPushNotifications(uid: ID): Promise<boolean> {
-  if (Platform.OS === "web") return false;
+  if (Platform.OS === "web" || !isRemotePushSupported()) return false;
 
   const granted = await requestPushPermissions();
   if (!granted) return false;
