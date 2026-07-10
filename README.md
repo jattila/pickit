@@ -175,7 +175,7 @@ telepíthető) buildhez az **EAS Build** kell. A projekt már elő van készítv
 `app.json` (alkalmazás-azonosítók, ikon, splash) és `eas.json` (build profilok)
 készen van.
 
-> Alkalmazás-azonosító: jelenleg `com.pickit.app` (iOS `bundleIdentifier` és
+> Alkalmazás-azonosító: `hu.pickit.app` (iOS `bundleIdentifier` és
 > Android `package`). Ha sajátot szeretnél, **az első build előtt** írd át az
 > `app.json`-ban.
 

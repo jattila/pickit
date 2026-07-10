@@ -13,12 +13,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pickit.app",
-      "buildNumber": "1"
+      "bundleIdentifier": "hu.pickit.app",
+      "buildNumber": "2",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.pickit.app",
-      "versionCode": 1,
+      "package": "hu.pickit.app",
+      "versionCode": 3,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -61,6 +64,9 @@
         "projectId": "b4dfe696-2f33-42f8-83ac-d851ffd42913"
       }
     },
-    "owner": "jattila"
+    "owner": "jattila",
+    "updates": {
+      "url": "https://u.expo.dev/b4dfe696-2f33-42f8-83ac-d851ffd42913"
+    }
   }
 }
