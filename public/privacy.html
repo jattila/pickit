@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PickIt – Adatvédelmi tájékoztató</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --text: #1a1a1a;
+      --muted: #555;
+      --accent: #2e7d5b;
+      --bg: #fafafa;
+      --card: #fff;
+      --border: #e5e5e5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin: 0 0 8px;
+      color: var(--accent);
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+    .lang {
+      margin-bottom: 20px;
+      font-size: 0.92rem;
+    }
+    h2 {
+      font-size: 1.15rem;
+      margin: 28px 0 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    p, li { font-size: 0.98rem; }
+    ul { padding-left: 1.25rem; }
+    a { color: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 12px 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f0f4f2; }
+    footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="lang"><a href="/privacy-en.html">English</a> · Magyar</p>
+    <h1>PickIt – Adatvédelmi tájékoztató</h1>
+    <p class="meta">Hatályos: 2026. július 11. · Verzió: 1.0</p>
+
+    <p>
+      A PickIt („<strong>Alkalmazás</strong>”) egy közös családi bevásárlólista-alkalmazás.
+      Jelen tájékoztató ismerteti, hogy milyen személyes adatokat kezelünk, miért, meddig,
+      és milyen jogok illetik meg Önt.
+    </p>
+
+    <h2>1. Adatkezelő</h2>
+    <p>
+      <strong>Név:</strong> Attila Juhász-Vedres<br>
+      <strong>E-mail:</strong> <a href="mailto:jattila.np@gmail.com">jattila.np@gmail.com</a><br>
+      <strong>Alkalmazás:</strong> PickIt (hu.pickit.app)
+    </p>
+
+    <h2>2. Milyen adatokat kezelünk?</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Adat</th>
+          <th>Forrás</th>
+          <th>Cél</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>E-mail cím</td>
+          <td>Regisztráció, fiók összekapcsolás</td>
+          <td>Bejelentkezés, e-mail megerősítés, jelszó-visszaállítás</td>
+        </tr>
+        <tr>
+          <td>Jelszó</td>
+          <td>Regisztráció</td>
+          <td>Hitelesítés (titkosítva, a Firebase Auth kezeli; mi nem látjuk)</td>
+        </tr>
+        <tr>
+          <td>Megjelenített név</td>
+          <td>Ön adja meg</td>
+          <td>Azonosítás a háztartásban, listákon, értesítésekben</td>
+        </tr>
+        <tr>
+          <td>Felhasználói azonosító (UID)</td>
+          <td>Automatikusan generált</td>
+          <td>Fiók és adatok összekapcsolása</td>
+        </tr>
+        <tr>
+          <td>Bevásárlólisták, tételek, katalógus</td>
+          <td>Ön és a háztartás tagjai</td>
+          <td>Az alkalmazás alapfunkciói, valós idejű megosztás</td>
+        </tr>
+        <tr>
+          <td>Ki, mit jelölt be és mikor</td>
+          <td>Alkalmazás használata</td>
+          <td>Listaállapot szinkronizálása a családtagok között</td>
+        </tr>
+        <tr>
+          <td>Háztartás neve, meghívó kód</td>
+          <td>Ön adja meg</td>
+          <td>Családi megosztás, csatlakozás</td>
+        </tr>
+        <tr>
+          <td>Push értesítési token</td>
+          <td>Az Ön engedélyével</td>
+          <td>Lista-változásokról értesítés küldése</td>
+        </tr>
+        <tr>
+          <td>Nyelv, betűméret-beállítás</td>
+          <td>Az Ön választása</td>
+          <td>Alkalmazás megjelenítése az Ön preferenciái szerint</td>
+        </tr>
+        <tr>
+          <td>Összeomlási / hibajelentések</td>
+          <td>Automatikusan, hiba esetén</td>
+          <td>Hibák javítása, stabilitás javítása</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Vendég módban e-mail cím nélkül is használhatja az Alkalmazást. Ilyenkor csak
+      megjelenített név és technikai azonosító kerül rögzítésre.
+    </p>
+
+    <h2>3. Adatkezelés célja és jogalapja (GDPR)</h2>
+    <ul>
+      <li><strong>Szerződés teljesítése</strong> – az Alkalmazás szolgáltatásainak biztosítása (6. cikk (1) b)).</li>
+      <li><strong>Hozzájárulás</strong> – push értesítések (6. cikk (1) a)); visszavonható az eszköz vagy az Alkalmazás beállításaiban.</li>
+      <li><strong>Jogos érdek</strong> – hibajelentések gyűjtése a megbízhatóság érdekében (6. cikk (1) f)).</li>
+    </ul>
+
+    <h2>4. Adattárolás helye és ideje</h2>
+    <p>
+      A fiók- és listaadatokat a <strong>Google Firebase</strong> szolgáltatásában tároljuk
+      (Firestore, Authentication). A szerveroldali feldolgozás elsősorban az
+      <strong>europe-central2</strong> (európai) régióban történik.
+    </p>
+    <p>
+      Az adatokat addig őrizzük meg, amíg fiókja és háztartásbeli adatai szükségesek
+      a szolgáltatás nyújtásához. Kérésre töröljük személyes adatait (lásd 7. pont).
+    </p>
+    <p>
+      Az Alkalmazás a listaadatokat az eszközön is ideiglenesen gyorsítótárazza
+      (offline használat és gyorsabb betöltés céljából).
+    </p>
+
+    <h2>5. Harmadik felek (adatfeldolgozók)</h2>
+    <ul>
+      <li>
+        <strong>Google Firebase</strong> (Google Ireland Limited) – hitelesítés, adatbázis,
+        szerveroldali funkciók.
+        <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Adatvédelmi tájékoztató</a>
+      </li>
+      <li>
+        <strong>Expo / EAS</strong> (650 Industries, Inc.) – push értesítések továbbítása,
+        alkalmazás-frissítések.
+        <a href="https://expo.dev/privacy" target="_blank" rel="noopener">Adatvédelmi tájékoztató</a>
+      </li>
+      <li>
+        <strong>Sentry</strong> (Functional Software, Inc.) – összeomlási és hibajelentések.
+        <a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Adatvédelmi tájékoztató</a>
+      </li>
+    </ul>
+    <p>
+      Az Alkalmazás <strong>nem használ reklám- vagy marketing-analitikai SDK-kat</strong>,
+      és nem értékesít adatot harmadik feleknek.
+    </p>
+
+    <h2>6. Push értesítések</h2>
+    <p>
+      Ha engedélyezi, a háztartásban történt lista-változásokról értesítést küldünk
+      (pl. ki mit jelölt be). Az értesítéshez szükséges eszköz-token az Ön Firebase
+      profiljához kapcsolódik. Az értesítéseket az Alkalmazás beállításaiban vagy
+      az eszköz rendszerbeállításaiban kapcsolhatja ki.
+    </p>
+
+    <h2>7. Az Ön jogai</h2>
+    <p>Az EU adatvédelmi rendelete (GDPR) alapján jogosult:</p>
+    <ul>
+      <li>hozzáférést kérni személyes adataihoz;</li>
+      <li>kérni azok helyesbítését vagy törlését;</li>
+      <li>kérni az adatkezelés korlátozását;</li>
+      <li>tiltakozni bizonyos adatkezelés ellen;</li>
+      <li>adathordozhatósághoz (ahol alkalmazható);</li>
+      <li>panaszt tenni a
+        <a href="https://www.naih.hu" target="_blank" rel="noopener">Nemzeti Adatvédelmi és Információszabadság Hatóságnál (NAIH)</a>.
+      </li>
+    </ul>
+    <p>
+      Adatvédelmi kéréseit az
+      <a href="mailto:jattila.np@gmail.com">jattila.np@gmail.com</a>
+      címen intézheti. A törlési kérelmeket ésszerű határidőn belül teljesítjük.
+    </p>
+
+    <h2>8. Gyermekek</h2>
+    <p>
+      Az Alkalmazás családi használatra készült, de nem gyűjt tudatosan 16 év alatti
+      gyermekek adatait szülői felügyelet nélkül. Ha úgy véli, hogy gyermek adatait
+      jogosulatlanul kezeltük, kérjük, vegye fel velünk a kapcsolatot.
+    </p>
+
+    <h2>9. Biztonság</h2>
+    <p>
+      Az adatokhoz csak bejelentkezett, jogosult felhasználók férhetnek hozzá.
+      A háztartáson kívüli hozzáférést szerveroldali szabályok (Firestore Security Rules)
+      korlátozzák. A jelszavakat a Firebase Auth kezeli, titkosított formában.
+    </p>
+
+    <h2>10. A tájékoztató módosítása</h2>
+    <p>
+      Fenntartjuk a jogot a tájékoztató frissítésére. A lényeges változásokról az
+      Alkalmazáson belül vagy ezen az oldalon tájékoztatjuk. A hatálybalépés dátuma
+      az oldal tetején szerepel.
+    </p>
+
+    <footer>
+      PickIt · hu.pickit.app · Utolsó frissítés: 2026. július 11.
+    </footer>
+  </main>
+</body>
+</html>

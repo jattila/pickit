@@ -1,0 +1,507 @@
+PickIt – felhasználói kérések és kérdések
+==================================================
+Összesen: 163 bejegyzés
+Forrás: Cursor beszélgetés-előzmények (2026. június 7. – július 13.)
+
+1. (Sunday, Jun 7, 2026, 6:54 PM (UTC+2))
+   készítsünk egy olyan mobil alkalmazást, amiben a felhasználó a bevásárló listáját tudná összeállítani és karbantartani és a vásárlás során bejelölni a megvásárolt tételeket, meg tudná jegyezni a már használt tételeket és a következő listát ebből válogatva összeállítani, hogy ne kelljen állandóan újra begépelni a tételeket, a családtagok meg tudják osztani egymással a listát és ha egyszerre vásárolnak a másik családtag egyből lássa, hogy az adott tételt már megvásárolta a másik
+
+2. (Sunday, Jun 7, 2026, 7:22 PM (UTC+2))
+   a firebase projek létrehozásakor bekapcsolva hagyjam a google opciókat? developer program, gemini ai, analytics?
+
+3. (Sunday, Jun 7, 2026, 7:36 PM (UTC+2))
+   Authentication → Anonymous és Email/Password bekapcsolása
+   hol tudom ezt bekapcsolni
+
+4. (Monday, Jun 8, 2026, 1:09 AM (UTC+2))
+   miért nem supabase-t használtál
+
+5. (Thursday, Jun 11, 2026, 8:47 AM (UTC+2))
+   az ios expo go app 4.9 es verzióvan a 54.0.2 expot támogatja
+
+6. (Thursday, Jun 11, 2026, 5:59 PM (UTC+2))
+   ezt "Firestore Database létrehozása" írd le részletesen
+
+7. (Thursday, Jun 11, 2026, 6:11 PM (UTC+2))
+   kérlek
+
+8. (Thursday, Jun 11, 2026, 6:19 PM (UTC+2))
+   nem találom a fogaskereket a projekt neve mellett
+
+9. (Thursday, Jun 11, 2026, 7:24 PM (UTC+2))
+   Hogyan tudok ebből production ready appot csinálni?
+
+10. (Thursday, Jun 11, 2026, 8:41 PM (UTC+2))
+   csináld meg az 1.
+
+11. (Thursday, Jun 11, 2026, 8:53 PM (UTC+2))
+   csináld a 2-est kérlek
+
+12. (Friday, Jun 12, 2026, 3:51 PM (UTC+2))
+   ezeket kérlek magyarázd el részletesebben: 
+   Firestore-szabályok szigorítása. Most a households dokumentumot bármelyik bejelentkezett felhasználó olvashatja (ez kellett a meghívó kódos csatlakozáshoz):
+   
+   firestore.rules
+   Lines 20-22
+       match /households/{householdId} {
+         allow read: if request.auth != null;
+   Production-ben ehelyett egy külön inviteCodes/{KÓD} → { householdId } gyűjtemény kell (csak ezt olvashatja bárki), a households olvasását pedig csak tagokra korlátozzuk. Plusz: mezőszintű validáció (pl. ne lehessen memberIds-t tetszőlegesen átírni, ne lehessen más nevében bejelölni).
+   
+   b) App Check bekapcsolása (Play Integrity / App Attest) – hogy csak a te appodból érkező kérések érjék el a Firestore-t, ne egy lemásolt API-kulccsal bárki.
+   
+   c) Adatérvényesítés a szabályokban (típusok, kötelező mezők, hossz-limitek), hogy egy elrontott/rosszindulatú kliens ne tudjon szemetet írni.
+
+13. (Friday, Jun 12, 2026, 4:04 PM (UTC+2))
+   csináld
+
+14. (Friday, Jun 12, 2026, 4:09 PM (UTC+2))
+   menjünk  a 3. lépésre
+
+15. (Friday, Jun 12, 2026, 4:36 PM (UTC+2))
+   regisztráltam emaillel, de nem jött megerősítő email
+
+16. (Friday, Jun 12, 2026, 4:55 PM (UTC+2))
+   Kérlek írd át úgy, hogy jelezze a hibát
+
+17. (Friday, Jun 12, 2026, 5:00 PM (UTC+2))
+   Egyébként a Spam mappában volt. Kellene egy üzenet a képernyőre, hogy ellenőrizd a hogy nézd meg a levélszemét mappában is.
+
+18. (Friday, Jun 12, 2026, 5:02 PM (UTC+2))
+   Egyébként mi történik, ha nem erősíti meg valaki az email címét?
+
+19. (Friday, Jun 12, 2026, 5:05 PM (UTC+2))
+   szerinem az 1. és a 2-est csináld meg
+
+20. (Friday, Jun 12, 2026, 5:10 PM (UTC+2))
+   ha nem indítom újra az appot akkor a változtatások nem érvényesülnek, ugye?
+
+21. (Friday, Jun 12, 2026, 5:14 PM (UTC+2))
+   azt írja a cursor, hogy már fut az alkalmazás és indítsam el egy másik porton
+
+22. (Friday, Jun 12, 2026, 5:17 PM (UTC+2))
+   hogyan tudok a terminálablakok között váltani cursorban, mit  csináljak, ha bezártam az előző terminal ablakot
+
+23.
+   ˝˝˝miért van az, hogy amikor újraindítom az alkalmazást cache törlés opcióval úgyanaz a képernyő fogad mint amikor kilőttem
+
+24.
+   nem működik a kijelentkezés, eleve nem gomb kinézete van
+
+25.
+   kérlek vezess végig az elsőEAS buildön
+
+26.
+   nem fut le a parancs. ezt írja ki: @/Users/jattila/.cursor/projects/Users-jattila-www-pickit/terminals/3.txt:8-16
+
+27.
+   npm run eas:login
+
+28.
+   kelrék
+
+29.
+   kérlek állistd vissza a firestore.rules-t
+
+30.
+   tudok iphone-ra teszt buildet csinálni amit fel lehet rakni az app store nélkül
+
+31.
+   matlábórp
+
+32.
+   próbáltam elindítani az appot tunell módban de  a következő hibát kaptam
+
+33.
+   hogy tudom kilőni az előző fitást
+
+34.
+   nem indult el
+
+35.
+   npm run start:tunnel
+
+36.
+   hol tartottunk a fejlesztésnél
+
+37.
+   csináljuk meg az offline támogatást
+
+38.
+   offline módban a hozzáadáskor a billentyűzet kitakarja a szövegbeviteli mezőt
+
+39.
+   ujratöltöttem az appot, de nem javult
+
+40.
+   nézd meg a terminalban hogy milyen hibát dobott miután visszakapcsoltam az online módot
+
+41.
+   kérlek
+
+42.
+   szerintem már rendben van
+
+43.
+   töltsd fel a kódot githubra a github/jattila repoba
+
+44.
+   megnyomtam a  publish branch gombot, kaptam egy kódot, authentikáltam a gépemet, a publish branchen pörög a frissítés gomb, de nem látom hogy mit kéne még tennem
+
+45.
+   lehessen szerkeszteni az egyes elemekeket
+
+46.
+   indíts el tunnel módban
+
+47.
+   hol találom a qr kódot
+
+48.
+   amikor elkezdem gépelni a hozzáadandó elemet ne kelljen végiggépelni
+
+49.
+   hozzáadtam egy elemet, visszaléptem a főképernyőre, majd a katalógusba és nem találtam ott az elemet
+
+50.
+   legyenek a
+
+51.
+   legyenek abs sorrendben a katalóguus elemek
+
+52.
+   hogyan tudom beállítani a usen.ame-t és a user.email-t, hogy pusholni tudjak
+
+53.
+   a katalógus is szerkeszthatő legyen és mindkét helyen legyen egy apró gomb a szerkesztéshez, hogy ne kelljen kitalálni, hogy szerkeszthető
+
+54.
+   maradjon meg a
+
+55.
+   maradjon meg az  eddigi menű és a szerkesztés gomb sokkal halványabb legyen
+
+56.
+   az elemek megadásakor a kezdőbetű kisbetű legye
+
+57.
+   ha átírok a bevásárló listában egy elemet (pl javítom a nagybetűseket kisbetűsekre) akkor az a katalógusban nem íródik át
+
+58.
+   ha beírok egy új tételt az nem jelenik meg a következő tétel beírásakor a listában, ez szándékos?
+
+59.
+   ha szerkesztek egy elemet a bevásárló listában, akkor nem működik a mentés gomb
+
+60.
+   hol tartunk most a fejlesztésben
+
+61.
+   volt szó a sentry bevezetéséről
+
+62.
+   igen
+   DSN: https://f84c89cf435070affe6ac0479cc3c174@o4509009645731840.ingest.de.sentry.io/4511563761647696
+
+63.
+   változott a dsn erre: https://78817db535a9a194f50bbd000c073051@o4511563959762944.ingest.de.sentry.io/4511563973197904
+
+64.
+   nem indul a start, a konzolban látod a problémát
+
+65.
+   valami még mindig nem stimmel
+
+66.
+   CommandError: ngrok tunnel took too long to connect.
+
+67.
+   azért használom a tunnel opciót, hogy távolról is lehessen tesztelni
+
+68.
+   nem lehet szerkeszteni a lista neveket
+
+69.
+   az archiválás menű miért került be az appba
+
+70.
+   nem kellenek tanúsítványok ehhez a projekthez?
+
+71.
+   minek a rövidítése az EAS
+
+72.
+   legyen a beállítások menuben lehetőség a betűméret nagyítására és kicsinyítésére és ezt felhasználónként tárolja
+
+73.
+   hibát dobott a program, nézd meg a consoleban
+
+74.
+   miért szerepel néhány tétel a katalógusban 2x szorzóval
+
+75.
+   ne mutassa ezt a számlálót
+
+76.
+   ha már be van jelölve a listába, ne lehessen mégegyszer berakni, mivel azt már megvette valaki
+
+77.
+   Lehessen nyelvet változtatni. Az alapértelmezett nxelv legyen magyar és legyen még két nyelv, az angol és a német. Legyeb a beállítások menuben lehetőség a nyelv váltásra.
+
+78.
+   alakítsd át a programot ű
+
+79.
+   alakítsd át a programot úgy, hogy használjon hamburger menűt is
+
+80.
+   A hamburder menű megnyomásakor belövő sávban a jelenlegi bevásárló kosár ikon helyett használd a pickit ikont.
+
+81.
+   igazítd az ikont bal felülre
+
+82.
+   úgyértem azért maradjon a feliratok előtt
+
+83.
+   nézzük meg újra a középre igazítottat
+
+84.
+   ok, mégis marasjon így
+
+85.
+   lehessen kedvencelni az egyes tételeket, akár a bevásárlólistában akár a katalógusban. a kedvencek jelölésére a csillagot használd. a kedvenceket a katalógusban a rendezésnél hozza a többi ttétel elé. azon belül pedig legyenek abc sorrendben
+
+86.
+   ha előzőleg valamiből több darabot vettem és legközelebb hozzá akarom adni, akkor automatikusan annyi db-ot ad hozzá. pl fokhagymát adtam hozzá, amiből előzőleg 4 db-ot vettem, az a katalógusban úgy szerepelt, hogy fokhagyma 4 db. a katalógus ne jegyezze meg a darabszámot.
+
+87.
+   ha úgy adom meg a tételt, hogy oda írom, hogy hány db vagy darab, akkor mennyiségnek írja be a darabszámot
+
+88.
+   ha a katalő
+
+89.
+   ha akatalógusban egy elemet szerkesztek, akkor megint nem működik a mentés gomb
+
+90.
+   ha a tétel előtt egy szám szerepel és utána egy szóköz, majd a tétel neve, akkor a számot vegye darabszámnak
+
+91.
+   a katalógusnál is működjön a ha
+
+92.
+   revert
+
+93.
+   a katalógusnál is működjön a hosszan tappolás menű
+
+94.
+   FirebaseError: Function WriteBatch.set() called with invalid data. deleteField() cannot be used with set() unless you pass {merge:true} (found in field defaultQuantity in document households/SfOHL8d1msXgV7iwbdEA/catalog/vágott-zsömle)
+
+95.
+   ha kedvencelek egy tételt az a bevásárló listában is a liista elejére kerüljön, mint a katalógusban
+
+96.
+   a bevásárlólistában azon túl a hozzáadás sorrendje számítson
+
+97.
+   androidon nem jön látszanak a lehetséges tételek, ha elkezdek gépelni egy tételt, pl. tej, tejszín, sőt maga a gépelt szöveg sem látszik
+
+98.
+   nem javult meg. ios-en ha belekattintok a beviteli mezőbe, egyből feljön a beviteli mező a lista fölé, androidon nem
+
+99.
+   hol tartunk most
+
+100.
+   android telefonokon, most ha a tételbeírására tappolok, akkor a képernyó tetejére viszi fel a bevitteli mezőt, majd ha elkezdek gépelni, akkor már visszauruk oda ahol elsőre is lennie kellett volna
+
+101.
+   most újra a régi problémába ütlköztunk, nem  látszik a gépelt szöveg. ezt már javítottuk egyszer.
+
+102.
+   még nem az igazi
+
+103.
+   androidon még nem pontos
+
+104.
+   hibára fut androidon
+
+105.
+   most ios-en jó, de két androidos telefonon is kipróbáltam és ott most a beviteli mezőre tappolva nem látszik a szövegmező. az előző verziónál látszott csak félig eltakarta a billentyűzet
+
+106.
+   ios-en jó, galaxy a15-ön mehetne egy 5 pixellel feljebb. galaxy s24plus-on pedig újra felugrik tappoláskor a tetejére
+
+107.
+   minden maradt változatlan
+
+108.
+   most minkét t
+
+109.
+   most midkétandroidos telefonon javult a helyzet, csak nem a billentyűzet fölé jön be a beviteli mező, hanem a sáv 1/3-a becsúszik a beviteli mező alá
+
+110.
+   így néz ki androidon
+
+111.
+   már alakul androidon is viszont zavaeó, hogy a beviteli mező alatt nincs margó, vagy padding, mint a tetején
+
+112.
+   így már rennben van mind a 3 telehonon.
+
+113.
+   csinálj ebből is androidra eas buildet
+
+114.
+   a bejelentkezés oldalon a jelszó gápelésénél legyen jelszó mutatása ikon (szem) , alapból legyen kikapcsolva
+
+115.
+   hasonlóan a tételek beviteléhez a bejelentkezésnél is eltakarja a billentyűzet a jelszó beviteli mezőt. ez általános probléma az androidos telefonokon. a regisztrációs képernyőn is ez a helyzet. nem görgeti a megnyitott billettyűzet fölé a beviteli mezőket.
+
+116.
+   androidon a lista hozzáadása képernyő szinttén felszalad a képernyő tetejére úgy, hogy ki is takarja a dobozokat
+
+117.
+   javult, de ha be akarok szöveget írni ismét felugrik
+
+118.
+   ugyanúgy felugrik a gépeléskor
+
+119.
+   ha elkezdem gépelni a lista nevét akkor ugrik fel, nem a tételeknél. a tételeknél már jó volt.
+
+120.
+   most már rendben van
+
+121.
+   A listák átnevezésénél legyen szintén ceruza ikon és hosszú tap menü
+
+122.
+   az ikon a jobb felső sarokba legyen igazítva tételek számához és a list navégez igazítva
+
+123.
+   sikeres bejelentkezés esetén ne maradjon a bejelentkezés képernyőn, hanem egy folyamatban pörgő ikonnak mutassa, hogy történik valami
+
+124.
+   elég, ha csak a gombon van a pörgőbasz, nem kell üres képernyő a lista bejövetele előtt. vagy ez nem szándékos, csak ilyen lassan töltődnek be a listák?
+
+125.
+   ha már megerősítette a felhasználó a regisztrációját, akkor ne kelljen ki/be jelentkezni, hogy tudjon csatlakozni egy családhoz
+
+126.
+   ez rendben működik.
+
+127.
+   push üzenetet is küldjön a családtagoknak, ha változtatok valamit, de csak pár perc után összefoglalva, hogy ne legyen zavaró
+
+128.
+   rendben
+
+129.
+   kérlek
+
+130.
+   miért nem sikerül a deploy
+
+131.
+   továbbra is hibat dob
+
+132.
+   Error: We failed to modify the IAM policy for the project. The functions deployment requires specific roles to be granted to service agents, otherwise the deployment will fail.
+
+133.
+   hogyan tovább? igy mar rendben van a projekt?
+
+134.
+   továbbra sem érkezik notification egyik telefona sem,  ha felveszek egy új tételt, pedig két különböző felhasználóként vagyok bejelentkezve
+
+135.
+   hogyan tudok kiléptetni a családból egy felhasználót ha nem ismerem a jelszavát
+
+136.
+   csináld meg, de a tagot csak fel lehessen fütteszteni majd újra aktiválni
+
+137.
+   ha két ugyanolyan nevű tag van egy családban, halványan írja ki a tagok listában a név mellé halványan zárójelben az email címüket is.
+
+138.
+   mindkét névnél írja ki az email címet ilyenkor
+
+139.
+   tudok-e olyan lekérdezést írni, ami kilistázza a felhasználókat, az email címüket és a tevékenységeiket
+
+140.
+   kérlek
+
+141.
+   hogyan tudom biztosítani az előfeltételeket
+
+142.
+   @/Users/jattila/.cursor/projects/Users-jattila-www-pickit/terminals/5.txt:57-59  Credential implementation provided to initializeApp() via the "credential" property failed to fetch a valid Google OAuth2 access token with the following error: "The file at /Users/jattila/pickit-admin-key.json does not exist, or it is not a file. ENOENT: no such file or directory, lstat '/Users/jattila/pickit-admin-key.json'
+
+143.
+   ha hozzáadok egy tételt akkor a notification go dev-et nyit meg
+
+144. (Saturday, Jul 4, 2026, 10:45 PM (UTC+2))
+   hogyan skálázódik ez az alkalmazás. mire kell odfigyelni?
+
+145.
+   szeretném tesztelésre kiajánlani az appot androidos tesztelőknek
+
+146.
+   az eas build elfailelt: Build failed: Gradle build failed with unknown error. See logs for the "Run gradlew" phase for more information.
+
+147.
+   elkészült az android  build, hogy osszam meg a tesztelőkkel
+
+148.
+   lehet profibb módon?
+
+149. (Friday, Jul 10, 2026, 3:02 PM (UTC+2))
+   kérlek
+
+150. (Friday, Jul 10, 2026, 3:53 PM (UTC+2))
+   hogyan tudom a picit-et az app storeba feltölteni?
+
+151. (Friday, Jul 10, 2026, 4:01 PM (UTC+2))
+   írj egy egysoros leírást a pickit-hez, amit be tudok írni a descriptionbe a BundleID kreálásához
+
+152. (Friday, Jul 10, 2026, 4:07 PM (UTC+2))
+   azt mondja a developer portál amikor regisztrálni akaroma bundleid-t: An attribute in the provided entity has invalid value
+   An App ID with Identifier 'com.pickit.app' is not available. Please enter a different string.
+
+153. (Friday, Jul 10, 2026, 4:16 PM (UTC+2))
+   hu.pickit.app lett az azonosító
+
+154. (Friday, Jul 10, 2026, 4:18 PM (UTC+2))
+   kérlek csináld meg a buildeket
+
+155. (Friday, Jul 10, 2026, 4:58 PM (UTC+2))
+   nézd meg, hogy minden forráskód bekerült e repoba?
+
+156. (Friday, Jul 10, 2026, 5:03 PM (UTC+2))
+   igen
+
+157. (Friday, Jul 10, 2026, 5:31 PM (UTC+2))
+   npm run eas:submit:ios
+
+158. (Friday, Jul 10, 2026, 5:52 PM (UTC+2))
+   itt mi a gond: @/Users/jattila/.cursor/projects/Users-jattila-www-pickit/terminals/3.txt:36-38
+
+159. (Friday, Jul 10, 2026, 5:56 PM (UTC+2))
+   mergeld  be a branchat a main repoba
+
+160. (Saturday, Jul 11, 2026, 12:11 AM (UTC+2))
+   készíts egy adatvédelmi tájékoztatót, ami szükséges a publikáláshoz
+
+161. (Saturday, Jul 11, 2026, 12:14 AM (UTC+2))
+   készíts angol verziót is és deployold firebase hostingra
+
+162. (Monday, Jul 13, 2026, 11:09 PM (UTC+2))
+   készítens egy agents.md fájlt a pickit projekt indulásától az előző kérdéseim alapján
+
+163. (Monday, Jul 13, 2026, 11:12 PM (UTC+2))
+   listázd ki a pickit projekt indulása óta feltett kéréseimet egy kerdesek txt fájlba
